@@ -1,22 +1,18 @@
 ﻿using _Game.Interfaces;                                
 using _Game.Core.Events;                               
 using _Game.Core;                                      
-// using _Game.Runtime.Levels;                            
+using _Game.Runtime.Levels;                            
 
 namespace _Game.Systems.UI.Defense
 {
-    /// <summary>
-    /// Controller: builds model from LevelRuntimeConfig, wires view clicks to CharacterSelectedEvent,
-    /// listens for placement state changes and updates model.
-    /// </summary>
     public sealed class DefenseCatalogueScreen : BaseUIScreen<DefenseCatalogueModel, DefenseCatalogueView>
     {
         public override void Construct(DefenseCatalogueModel model, DefenseCatalogueView view, IEventBus eventBus)
         {
-            base.Construct(model, view, eventBus); // also binds the view to the model per BaseUIScreen. :contentReference[oaicite:2]{index=2}
+            base.Construct(model, view, eventBus);
 
-            // var levelCfg = GameContext.Container.Resolve<LevelRuntimeConfig>();
-            // Model.SetItems(levelCfg.AllowedDefenseArchetypes);
+            var levelCfg = GameContext.Container.Resolve<LevelRuntimeConfig>();
+            Model.SetItems(levelCfg.AllowedDefenseArchetypes);
 
             view.OnItemClicked += idx =>
             {

@@ -15,7 +15,6 @@ namespace _Game.Systems.UI.Defense
         [SerializeField] private GameObject placementHint;
 
         private readonly List<DefenseCatalogueItemView> _spawned = new();
-        /// <summary>Raised when a list item is clicked (index).</summary>
         public event System.Action<int> OnItemClicked;
 
         protected override void OnBind()
@@ -49,7 +48,7 @@ namespace _Game.Systems.UI.Defense
                 var v = _spawned[i];
                 if (!v) continue;
                 v.gameObject.SetActive(true);
-                v.Bind(i, m.Items[i]);
+                v.Bind(i, m.Items?[i]);
                 v.SetSelected(i == m.SelectedIndex);
             }
 
