@@ -22,12 +22,10 @@ namespace _Game.Runtime.Systems
             _surface     = surface;
             _projector   = projector;
             _events      = events;
-            Debug.Log("Pointer Hover System initialized");
         }
 
         public void Tick()
         {
-            Debug.Log("Heyuu");
             
             if (_surface == null || _rayProvider == null) return;
 
