@@ -9,13 +9,19 @@ namespace _Game.Utils
     {
         public static Coroutine Position(Transform target, Vector3 to, float duration, Ease ease = Ease.Linear, Action onComplete = null)
         {
+            if (target == null) return null;
+            if (duration <= 0f) { target.position = to; onComplete?.Invoke(); return null; }
+
             return CoroutineRunner.Instance.StartCoroutine(TweenRoutine(
-                t => target.position = t, 
+                t => target.position = t,
                 target.position, to, duration, Easing.Get(ease), onComplete));
         }
 
         public static Coroutine Scale(Transform target, Vector3 to, float duration, Ease ease = Ease.Linear, Action onComplete = null)
         {
+            if (target == null) return null;
+            if (duration <= 0f) { target.localScale = to; onComplete?.Invoke(); return null; }
+
             return CoroutineRunner.Instance.StartCoroutine(TweenRoutine(
                 t => target.localScale = t,
                 target.localScale, to, duration, Easing.Get(ease), onComplete));
@@ -23,13 +29,19 @@ namespace _Game.Utils
 
         public static Coroutine Rotate(Transform target, Quaternion to, float duration, Ease ease = Ease.Linear, Action onComplete = null)
         {
+            if (target == null) return null;
+            if (duration <= 0f) { target.rotation = to; onComplete?.Invoke(); return null; }
+
             return CoroutineRunner.Instance.StartCoroutine(TweenRoutineQuaternion(
                 q => target.rotation = q,
                 target.rotation, to, duration, Easing.Get(ease), onComplete));
         }
-        
+
         public static Coroutine Float(Action<float> setter, float from, float to, float duration, Ease ease = Ease.Linear, Action onComplete = null)
         {
+            if (setter == null) return null;
+            if (duration <= 0f) { setter(to); onComplete?.Invoke(); return null; }
+
             return CoroutineRunner.Instance.StartCoroutine(FloatRoutine(setter, from, to, duration, Easing.Get(ease), onComplete));
         }
 
@@ -46,7 +58,6 @@ namespace _Game.Utils
             setter(to);
             onComplete?.Invoke();
         }
-
 
         private static IEnumerator TweenRoutine(Action<Vector3> setter, Vector3 from, Vector3 to, float duration, Func<float, float> ease, Action onComplete)
         {

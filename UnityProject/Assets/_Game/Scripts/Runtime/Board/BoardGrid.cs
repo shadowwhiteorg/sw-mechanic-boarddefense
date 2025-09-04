@@ -4,10 +4,6 @@ using _Game.Runtime.Core;
 
 namespace _Game.Runtime.Board
 {
-    /// <summary>
-    /// Authoritative grid: bounds, occupancy, placement rules.
-    /// LOCAL-SPACE convention: +X => columns (right), +Z => rows (up), Y is up. Row 0 = bottom (defense side).
-    /// </summary>
     public sealed class BoardGrid
     {
         public GridSize Size { get; }

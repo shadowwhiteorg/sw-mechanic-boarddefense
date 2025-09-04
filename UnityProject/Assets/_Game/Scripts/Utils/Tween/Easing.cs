@@ -12,12 +12,11 @@ namespace _Game.Utils
 
         public static Func<float, float> Get(Ease ease) => ease switch
         {
-            Ease.Linear => Linear,
-            Ease.InQuad => EaseInQuad,
-            Ease.OutQuad => EaseOutQuad,
-            Ease.InOutQuad => EaseInOutQuad,
-            _ => Linear
+            Ease.Linear   => Linear,
+            Ease.InQuad   => EaseInQuad,
+            Ease.OutQuad  => EaseOutQuad,
+            Ease.InOutQuad=> EaseInOutQuad,
+            _             => Linear
         };
     }
-
 }
