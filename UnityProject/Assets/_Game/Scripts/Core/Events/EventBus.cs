@@ -21,16 +21,18 @@ namespace _Game.Core.Events
             var type = typeof(T);
             if (_handlers.TryGetValue(type, out var existing))
             {
-                _handlers[type] = Delegate.Remove(existing, handler);
+                var updated = Delegate.Remove(existing, handler);
+                if (updated == null || updated.GetInvocationList().Length == 0)
+                    _handlers.Remove(type);
+                else
+                    _handlers[type] = updated;
             }
         }
 
         public void Fire<T>(T eventData) where T : IGameEvent
         {
             if (_handlers.TryGetValue(typeof(T), out var handler))
-            {
                 (handler as Action<T>)?.Invoke(eventData);
-            }
         }
     }
 }

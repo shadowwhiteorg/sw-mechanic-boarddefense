@@ -10,29 +10,26 @@ namespace _Game.Core
 
         public void Register(IUpdatableSystem system)
         {
-            if (!_updateSystems.Contains(system))
+            if (system != null && !_updateSystems.Contains(system))
                 _updateSystems.Add(system);
         }
 
         public void Register(IFixedUpdatableSystem system)
         {
-            if (!_fixedUpdateSystems.Contains(system))
+            if (system != null && !_fixedUpdateSystems.Contains(system))
                 _fixedUpdateSystems.Add(system);
         }
 
-        public void Unregister(IUpdatableSystem system) => _updateSystems.Remove(system);
-        public void Unregister(IFixedUpdatableSystem system) => _fixedUpdateSystems.Remove(system);
-
         public void Tick()
         {
-            foreach (var system in _updateSystems)
-                system.Tick();
+            for (int i = 0; i < _updateSystems.Count; i++)
+                _updateSystems[i].Tick();
         }
 
         public void FixedTick()
         {
-            foreach (var system in _fixedUpdateSystems)
-                system.FixedTick();
+            for (int i = 0; i < _fixedUpdateSystems.Count; i++)
+                _fixedUpdateSystems[i].FixedTick();
         }
     }
 }
