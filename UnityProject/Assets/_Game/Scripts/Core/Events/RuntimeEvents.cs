@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using _Game.Interfaces;
+using _Game.Runtime.Characters.Config;
 using _Game.Runtime.Core;
 
 namespace _Game.Core.Events
@@ -16,5 +17,27 @@ namespace _Game.Core.Events
 
         public override string ToString()
             => Cell.HasValue ? $"HoverCellChanged(Cell={Cell.Value}, World={World})" : "HoverCellChanged(Cell=null)";
+    }
+    
+    public readonly struct CharacterSelectedEvent : IGameEvent
+    {
+        public readonly CharacterArchetype Archetype;
+        public CharacterSelectedEvent(CharacterArchetype archetype) { Archetype = archetype; }
+    }
+
+    public readonly struct PlacementModeChangedEvent : IGameEvent
+    {
+        public readonly bool IsActive;
+        public PlacementModeChangedEvent(bool active) { IsActive = active; }
+    }
+
+    public readonly struct CharacterPlacedEvent : IGameEvent
+    {
+        public readonly CharacterArchetype Archetype;
+        public readonly int EntityId;
+        public readonly Cell Cell;
+        public readonly bool IsEnemy;
+        public CharacterPlacedEvent(CharacterArchetype a, int id, Cell c, bool isEnemy)
+        { Archetype = a; EntityId = id; Cell = c; IsEnemy = isEnemy; }
     }
 }
