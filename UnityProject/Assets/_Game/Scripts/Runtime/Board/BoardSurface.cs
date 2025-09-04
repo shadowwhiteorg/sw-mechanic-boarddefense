@@ -10,10 +10,8 @@ namespace _Game.Runtime.Board
         [Min(1)] public int cols = 8;
         [Min(0.01f)] public float cellSize = 1f;
 
-        [Tooltip("Local-space bottom-left corner of Cell(0,0). Usually (0,0,0).")]
         public Vector3 localOrigin = Vector3.zero;
 
-        /// <summary>World-space plane point (origin) & normal.</summary>
         public Vector3 WorldPlanePoint => transform.TransformPoint(localOrigin);
         public Vector3 WorldPlaneNormal => transform.up; // X/Z board => Y is normal
 

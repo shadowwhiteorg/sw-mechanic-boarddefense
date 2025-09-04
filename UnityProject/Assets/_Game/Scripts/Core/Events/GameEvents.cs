@@ -2,9 +2,10 @@
 
 namespace _Game.Core.Events
 {
-    public struct GameStartedEvent : IGameEvent
+    public readonly struct GameStartedEvent : IGameEvent
     {
         public string Message { get; }
         public GameStartedEvent(string message) => Message = message;
+        public override string ToString() => $"GameStartedEvent(Message={Message})";
     }
 }

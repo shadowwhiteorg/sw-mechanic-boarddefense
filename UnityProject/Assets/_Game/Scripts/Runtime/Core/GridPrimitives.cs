@@ -23,8 +23,8 @@ namespace _Game.Runtime.Core
     [Serializable]
     public readonly struct Cell : IEquatable<Cell>
     {
-        public readonly int Row; // 0 = bottom, increases upward
-        public readonly int Col; // 0 = left, increases to the right
+        public readonly int Row; 
+        public readonly int Col; 
 
         public Cell(int row, int col) { Row = row; Col = col; }
 

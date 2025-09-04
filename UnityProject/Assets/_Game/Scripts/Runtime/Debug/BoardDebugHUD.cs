@@ -1,44 +1,39 @@
 ﻿using UnityEngine;
-using _Game.Runtime.Core;
+using _Game.Core;
+using _Game.Core.Events;
+using _Game.Interfaces;
 using _Game.Runtime.Board;
+using _Game.Runtime.Core;
 
 namespace _Game.Runtime.Debugging
 {
-    /// <summary>
-    /// Lightweight play-mode HUD to visualize the cell under the pointer.
-    /// Not for shipping; helps validate math without physics.
-    /// </summary>
     [DisallowMultipleComponent]
     public sealed class BoardDebugHUD : MonoBehaviour
     {
-        [SerializeField] private Camera targetCamera;
-        [SerializeField] private BoardSurface boardSurface;
+        [SerializeField] private BoardSurface boardSurface; // for gizmo normal/origin
         [SerializeField] private bool drawMarker = true;
 
-        private BoardGrid _grid;
-        private GridProjector _projector;
-        private IRayProvider _rayProvider;
-
+        private IEventBus _events;
         private Cell? _hoverCell;
         private Vector3 _hoverWorld;
 
-        private void Awake()
+        private void OnEnable()
         {
-            if (!targetCamera) targetCamera = Camera.main;
-            _rayProvider = new ScreenSpaceRayProvider(targetCamera);
-            _grid = new BoardGrid(boardSurface.rows, boardSurface.cols, boardSurface.cellSize);
-            _projector = new GridProjector(_grid, boardSurface);
+            _events = GameContext.Events;
+            if (_events != null)
+                _events.Subscribe<HoverCellChangedEvent>(OnHoverChanged);
         }
 
-        private void Update()
+        private void OnDisable()
         {
-            var ray = _rayProvider.PointerToRay(Input.mousePosition);
-            if (InputProjectionMath.TryRayPlane(ray, boardSurface.WorldPlanePoint, boardSurface.WorldPlaneNormal, out var hit))
-            {
-                _hoverWorld = hit;
-                _hoverCell = _projector.TryWorldToCell(hit, out var c) ? c : (Cell?)null;
-            }
-            else _hoverCell = null;
+            if (_events != null)
+                _events.Unsubscribe<HoverCellChangedEvent>(OnHoverChanged);
+        }
+
+        private void OnHoverChanged(HoverCellChangedEvent e)
+        {
+            _hoverCell  = e.Cell;
+            _hoverWorld = e.World;
         }
 
         private void OnGUI()
@@ -52,10 +47,10 @@ namespace _Game.Runtime.Debugging
 
         private void OnDrawGizmos()
         {
-            if (!Application.isPlaying || !drawMarker || !_hoverCell.HasValue) return;
+            if (!Application.isPlaying || !drawMarker || !_hoverCell.HasValue || boardSurface == null) return;
             Gizmos.color = Color.yellow;
-            var p = _projector.CellToWorldCenter(_hoverCell.Value);
-            Gizmos.DrawSphere(p + boardSurface.WorldPlaneNormal * 0.02f, 0.05f);
+            var p = _hoverWorld + boardSurface.WorldPlaneNormal * 0.02f;
+            Gizmos.DrawSphere(p, 0.05f);
         }
     }
 }
