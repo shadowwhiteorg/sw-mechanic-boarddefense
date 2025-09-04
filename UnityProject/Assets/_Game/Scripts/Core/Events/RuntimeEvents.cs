@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using _Game.Interfaces;
+using _Game.Runtime.Characters;
 using _Game.Runtime.Characters.Config;
 using _Game.Runtime.Core;
 
@@ -40,4 +41,16 @@ namespace _Game.Core.Events
         public CharacterPlacedEvent(CharacterArchetype a, int id, Cell c, bool isEnemy)
         { Archetype = a; EntityId = id; Cell = c; IsEnemy = isEnemy; }
     }
+    public readonly struct CharacterDiedEvent : IGameEvent
+    {
+        public readonly CharacterEntity Entity;
+        public CharacterDiedEvent(CharacterEntity entity) { Entity = entity; }
+    }
+
+    public readonly struct CharacterDespawnedEvent : IGameEvent
+    {
+        public readonly int EntityId;
+        public CharacterDespawnedEvent(int entityId) { EntityId = entityId; }
+    }
+    
 }
