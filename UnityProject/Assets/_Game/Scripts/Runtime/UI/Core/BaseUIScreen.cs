@@ -1,7 +1,7 @@
 ﻿using _Game.Interfaces;
 using UnityEngine;
 
-namespace _Game.Systems.UISystem
+namespace _Game.Systems.UI
 {
     public abstract class BaseUIScreen<TModel, TView> : MonoBehaviour, IUIScreen
         where TModel : BaseUIModel

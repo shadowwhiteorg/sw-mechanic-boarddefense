@@ -1,7 +1,7 @@
 ﻿using System;
 using _Game.Interfaces;
 
-namespace _Game.Systems.UISystem
+namespace _Game.Systems.UI
 {
     public abstract class BaseUIModel : IUIModel
     {

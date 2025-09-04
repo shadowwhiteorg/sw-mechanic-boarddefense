@@ -3,7 +3,7 @@ using _Game.Interfaces;
 using _Game.Utils;
 using UnityEngine;
 
-namespace _Game.Systems.UISystem
+namespace _Game.Systems.UI
 {
     public abstract class BaseUIView : MonoBehaviour, IUIView
     {
