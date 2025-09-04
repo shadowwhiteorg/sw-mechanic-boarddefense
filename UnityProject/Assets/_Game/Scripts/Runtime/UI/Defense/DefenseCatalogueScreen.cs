@@ -1,7 +1,7 @@
 ﻿using _Game.Interfaces;                                
 using _Game.Core.Events;                               
 using _Game.Core;                                      
-// using _Game.Runtime.Levels;                            
+using _Game.Runtime.Levels;                            
 
 namespace _Game.Systems.UI.Defense
 {
@@ -15,8 +15,8 @@ namespace _Game.Systems.UI.Defense
         {
             base.Construct(model, view, eventBus); // also binds the view to the model per BaseUIScreen. :contentReference[oaicite:2]{index=2}
 
-            // var levelCfg = GameContext.Container.Resolve<LevelRuntimeConfig>();
-            // Model.SetItems(levelCfg.AllowedDefenseArchetypes);
+            var levelCfg = GameContext.Container.Resolve<LevelRuntimeConfig>();
+            Model.SetItems(levelCfg.AllowedDefenseArchetypes);
 
             view.OnItemClicked += idx =>
             {
