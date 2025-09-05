@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Defence A
   icon: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
   isEnemy: 0
-  viewPrefab: {fileID: 0}
+  viewPrefab: {fileID: 6905489635781892464, guid: 08ac1f26a8b3f0c43b8a7566404445a1, type: 3}
   baseHealth: 10
   attackDamage: 1
   attackRate: 1

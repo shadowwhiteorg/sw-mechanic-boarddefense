@@ -1,13 +1,13 @@
-﻿using UnityEngine;
-using _Game.Runtime.Core;
-using _Game.Runtime.Board;
+﻿using _Game.Runtime.Board;
 using _Game.Runtime.Characters;
 using _Game.Runtime.Characters.Config;
 using _Game.Runtime.Characters.View;
+using _Game.Runtime.Core;
+using UnityEngine;
 
 namespace _Game.Runtime.Placement
 {
-    public sealed class PlacementPreviewService
+    public class PlacementPreviewService
     {
         private readonly CharacterFactory _factory;
         private readonly BoardSurface _surface;
@@ -15,58 +15,61 @@ namespace _Game.Runtime.Placement
         private readonly PlacementValidator _validator;
         private readonly Transform _parent;
 
-        private CharacterArchetype _current;
-        private GameObject _ghost;
+        private GameObject _currentGhost;
+        private CharacterView _ghostView;
+        private CharacterArchetype _archetype;
+        private Vector3 _spawnOrigin;
 
-        public PlacementPreviewService(CharacterFactory factory, BoardSurface surface, GridProjector projector,
-                                       PlacementValidator validator, Transform parent)
+        public PlacementPreviewService(
+            CharacterFactory factory,
+            BoardSurface surface,
+            GridProjector projector,
+            PlacementValidator validator,
+            Transform parent)
         {
-            _factory = factory; _surface = surface; _projector = projector; _validator = validator; _parent = parent;
+            _factory = factory;
+            _surface = surface;
+            _projector = projector;
+            _validator = validator;
+            _parent = parent;
         }
 
         public void Begin(CharacterArchetype archetype)
         {
-            End(); // safety
-            _current = archetype;
-            _ghost = _factory.GetPreview(archetype, _parent);
-            SetTint(valid:false);
+            _archetype = archetype;
+            _currentGhost = _factory.GetPreview(archetype, _parent);
+            _ghostView = _currentGhost.GetComponent<CharacterView>();
+            _spawnOrigin = _currentGhost.transform.position;
         }
 
         public void UpdateTo(Cell? cell)
         {
-            if (_ghost == null) return;
+            if (_currentGhost == null || !cell.HasValue) return;
 
-            bool valid = false;
-            Vector3 pos = _ghost.transform.position;
+            var worldPos = _projector.CellToWorldCenter(cell.Value);
+            _currentGhost.transform.position = worldPos;
 
-            if (cell.HasValue)
-            {
-                var c = cell.Value;
-                valid = _validator.IsValid(c);
-                pos = _projector.CellToWorldCenter(c) + _surface.WorldPlaneNormal * 0.01f;
-            }
+            bool valid = _validator.IsValid(cell.Value);
+            _ghostView?.SetGhostVisual(true, valid);
+        }
 
-            _ghost.transform.position = pos;
-            SetTint(valid);
+        public void SnapBackToOrigin()
+        {
+            if (_currentGhost != null)
+                _currentGhost.transform.position = _spawnOrigin;
         }
 
         public void End()
         {
-            if (_ghost != null && _current != null)
+            if (_currentGhost)
             {
-                _factory.ReturnPreview(_current, _ghost);
+                Object.Destroy(_currentGhost);
+                _currentGhost = null;
+                _ghostView = null;
             }
-            _ghost = null;
-            _current = null;
         }
 
-        private void SetTint(bool valid)
-        {
-            var view = _ghost ? _ghost.GetComponent<CharacterView>() : null;
-            if (view) view.SetGhostVisual(true, valid);
-        }
-
-        public bool IsActive => _ghost != null;
-        public CharacterArchetype CurrentArchetype => _current;
+        public CharacterArchetype CurrentArchetype => _archetype;
+        public GameObject CurrentGhost => _currentGhost;
     }
 }

@@ -6,7 +6,8 @@ using _Game.Runtime.Systems;
 using _Game.Runtime.Visuals;             
 using _Game.Runtime.Characters;          
 using _Game.Runtime.Placement;           
-using _Game.Runtime.Levels;              
+using _Game.Runtime.Levels;
+using _Game.Runtime.Selection;
 using _Game.Utils;                       
 
 namespace _Game.Core.DI
@@ -17,6 +18,8 @@ namespace _Game.Core.DI
         [Header("Scene")]
         [SerializeField] private BoardSurface boardSurface;
         [SerializeField] private Camera       targetCamera;
+        [SerializeField] private Transform characterSelectionSpawnPoint;
+        [SerializeField] private float characterSpacing = 2f;
 
         [Header("Parents (optional)")]
         [SerializeField] private Transform visualsParent;
@@ -144,9 +147,17 @@ namespace _Game.Core.DI
             container.BindSingleton(charSystem);
 
             systems.Register((IUpdatableSystem)charSystem);
+            
+            // --- Spawn character selection ---
+            var selectorSpawner = new CharacterSelectionSpawner(level, characterSelectionSpawnPoint, characterSpacing, events);
+            var selectorViews = selectorSpawner.Spawn();
 
+            // --- Register non-physics selection system ---
+            var selectionSystem = new CharacterSelectionSystem(targetCamera, selectorViews);
+            systems.Register(selectionSystem);
+            
             // ==== Placement pipeline ========================================================
-
+    
             var validator  = new PlacementValidator(repo, grid);
             container.BindSingleton(validator);
 
