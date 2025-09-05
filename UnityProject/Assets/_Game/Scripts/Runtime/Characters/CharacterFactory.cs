@@ -1,10 +1,12 @@
-﻿using UnityEngine;
+﻿using _Game.Core;
+using UnityEngine;
 using _Game.Enums;
 using _Game.Interfaces;
 using _Game.Runtime.Board;
 using _Game.Runtime.Characters.Config;
 using _Game.Runtime.Characters.Plugins;
 using _Game.Runtime.Characters.View;
+using _Game.Runtime.Combat;
 using _Game.Runtime.Core;
 
 namespace _Game.Runtime.Characters
@@ -72,20 +74,30 @@ namespace _Game.Runtime.Characters
             return entity;
         }
 
-        private static void AttachDefaultPlugins(CharacterEntity e)
+        private void AttachDefaultPlugins(CharacterEntity e)
         {
-            // Example default wiring; align with your actual plugin policy
-            // TODO: Add plugins
-            
-            // e.AddPlugin(new HealthPlugin(e, max: e.Archetype.baseHealth));
-            // if (e.Role == CharacterRole.Defense)
-            // {
-            //     e.AddPlugin(new MeleeAttackPlugin( e.Archetype.attackRate,e.Archetype.attackDamage));
-            // }
-            // else if (e.Role == CharacterRole.Enemy)
-            // {
-            //     e.AddPlugin(new MovementPlugin(e, e.Archetype.moveSpeed));
-            // }
+            // Health on everyone
+            e.AddPlugin(new HealthPlugin(e.Archetype.baseHealth));
+
+            if (e.Role == CharacterRole.Defense)
+            {
+                var targets = GameContext.Container.Resolve<TargetingService>();
+                e.AddPlugin(new RangedAttackPlugin(
+                    targets,
+                    ratePerSec: e.Archetype.attackRate,
+                    damage: Mathf.RoundToInt(e.Archetype.attackDamage),
+                    rangeBlocks: e.Archetype.attackRangeBlocks,
+                    direction: e.Archetype.attackDirection));
+            }
+            else if (e.Role == CharacterRole.Enemy)
+            {
+                // TODO:
+                // If you want constant path drift for all enemies without per-wave paths,
+                // MovementPlugin can be added here with a default straight-down vector or lane path.
+                // Otherwise EnemySpawnerSystem adds a MovementPlugin using wave/path assets.
+            }
+
+            GameContext.Container.Resolve<CharacterSystem>().Register(e);
         }
     }
 }

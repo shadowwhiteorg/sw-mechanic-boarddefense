@@ -174,6 +174,15 @@ namespace _Game.Core.DI
                 dragLift: 0.01f 
             );
             systems.Register((IUpdatableSystem)selectionSystem);
+            
+            var targeting = new Runtime.Combat.TargetingService(grid, repo);
+            container.BindSingleton(targeting);
+
+            var lifetime = new Runtime.Combat.CharacterLifetimeSystem(repo, events);
+            systems.Register((IUpdatableSystem)lifetime);
+
+            var enemySpawner = new Runtime.Combat.EnemySpawnerSystem(grid, factory, repo, level, unitsParent);
+            systems.Register((IUpdatableSystem)enemySpawner);
         }
     }
 }
