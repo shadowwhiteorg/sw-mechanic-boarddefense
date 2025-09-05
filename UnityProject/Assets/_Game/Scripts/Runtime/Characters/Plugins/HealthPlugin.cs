@@ -1,5 +1,6 @@
-﻿using _Game.Interfaces;
-using _Game.Runtime.Characters;
+﻿using _Game.Core;
+using _Game.Core.Events;
+using _Game.Interfaces;
 
 namespace _Game.Runtime.Characters.Plugins
 {
@@ -16,19 +17,17 @@ namespace _Game.Runtime.Characters.Plugins
         }
 
         public void OnSpawn(CharacterEntity e) { _entity = e; }
+        public void OnDespawn() { _entity = null; }
         public void Tick(float dt) { }
 
         public void ApplyDamage(int dmg)
         {
-            if (dmg <= 0) return;
+            if (dmg <= 0 || _entity == null) return;
             Current -= dmg;
-            if (Current <= 0)
-            {
-                Current = 0;
-                // TODO: fire CharacterDiedEvent & return entity to pool via a Despawn flow
-            }
-        }
+            if (Current > 0) return;
 
-        public void OnDespawn() { _entity = null; }
+            Current = 0;
+            GameContext.Events?.Fire(new CharacterDiedEvent(_entity));
+        }
     }
 }
