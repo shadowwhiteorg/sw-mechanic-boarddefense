@@ -20,27 +20,6 @@ namespace _Game.Core.Events
             => Cell.HasValue ? $"HoverCellChanged(Cell={Cell.Value}, World={World})" : "HoverCellChanged(Cell=null)";
     }
     
-    public readonly struct CharacterSelectedEvent : IGameEvent
-    {
-        public readonly CharacterArchetype Archetype;
-        public CharacterSelectedEvent(CharacterArchetype archetype) { Archetype = archetype; }
-    }
-
-    public readonly struct PlacementModeChangedEvent : IGameEvent
-    {
-        public readonly bool IsActive;
-        public PlacementModeChangedEvent(bool active) { IsActive = active; }
-    }
-
-    public readonly struct CharacterPlacedEvent : IGameEvent
-    {
-        public readonly CharacterArchetype Archetype;
-        public readonly int EntityId;
-        public readonly Cell Cell;
-        public readonly bool IsEnemy;
-        public CharacterPlacedEvent(CharacterArchetype a, int id, Cell c, bool isEnemy)
-        { Archetype = a; EntityId = id; Cell = c; IsEnemy = isEnemy; }
-    }
     public readonly struct CharacterDiedEvent : IGameEvent
     {
         public readonly CharacterEntity Entity;

@@ -1,62 +1,65 @@
 ﻿using UnityEngine;
-using _Game.Interfaces;
-using _Game.Runtime.Board;
-using _Game.Runtime.Core;
-using _Game.Runtime.Systems;
-using _Game.Runtime.Visuals;
-using _Game.Core.DI;
-using _Game.Utils;
+using _Game.Interfaces;                  
+using _Game.Runtime.Board;               
+using _Game.Runtime.Core;                
+using _Game.Runtime.Systems;             
+using _Game.Runtime.Visuals;             
+using _Game.Runtime.Characters;          
+using _Game.Runtime.Placement;           
+using _Game.Runtime.Levels;              
+using _Game.Utils;                       
 
 namespace _Game.Core.DI
 {
     public sealed class RuntimeInstaller : BaseInstaller
     {
-        [Header("Scene References")]
+        // --------- Scene references ---------
+        [Header("Scene")]
         [SerializeField] private BoardSurface boardSurface;
-        [SerializeField] private Camera targetCamera;
+        [SerializeField] private Camera       targetCamera;
 
+        [Header("Parents (optional)")]
+        [SerializeField] private Transform visualsParent;
+        [SerializeField] private Transform unitsParent;
+
+        // --------- Visuals ---------
         [Header("Grid Visuals")]
-        [Tooltip("Prefab with a SpriteRenderer (static marker for each placeable cell).")]
+        [Tooltip("Static marker shown on every placeable cell.")]
         [SerializeField] private GameObject placeableCellPrefab;
-
-        [Tooltip("Prefab with a SpriteRenderer (single moving highlight).")]
+        [Tooltip("Single highlight that moves to hovered cell.")]
         [SerializeField] private GameObject hoverHighlightPrefab;
-
-        [Tooltip("Lift sprites slightly off the surface to avoid z-fighting.")]
         [SerializeField, Min(0f)] private float surfaceLift = 0.01f;
-
-        [Tooltip("Optional parent name for all grid visuals.")]
         [SerializeField] private string visualsRootName = "GridVisuals";
+
+        // --------- Level data ---------
+        [Header("Level")]
+        [SerializeField] private LevelCatalogue levelCatalogue;
+        [SerializeField] private string levelId = "Level-1";
+
+        // ======================================================================
 
         public override void Install(IDIContainer container)
         {
-            // --- Sanity checks ---
-            if (boardSurface == null)
+            // Resolve global services from GameInstaller
+            var events  = GameContext.Events;
+            var systems = GameContext.Systems;
+
+            // ---- Sanity checks ----
+            if (!boardSurface)
             {
                 Debug.LogError("[RuntimeInstaller] BoardSurface is not assigned.");
                 return;
             }
 
-            if (targetCamera == null) targetCamera = Camera.main;
-            if (targetCamera == null)
+            if (!targetCamera) targetCamera = Camera.main;
+            if (!targetCamera)
             {
                 Debug.LogError("[RuntimeInstaller] Target Camera is null (and no MainCamera found).");
                 return;
             }
 
-            if (placeableCellPrefab == null)
-            {
-                Debug.LogError("[RuntimeInstaller] PlaceableCellPrefab is not assigned.");
-                return;
-            }
+            // ==== Core runtime bindings =====================================================
 
-            if (hoverHighlightPrefab == null)
-            {
-                Debug.LogError("[RuntimeInstaller] HoverHighlightPrefab is not assigned.");
-                return;
-            }
-
-            // --- Core runtime bindings ---
             var rayProvider = new ScreenSpaceRayProvider(targetCamera);
             container.BindSingleton<IRayProvider>(rayProvider);
 
@@ -65,34 +68,96 @@ namespace _Game.Core.DI
 
             var projector = new GridProjector(grid, boardSurface);
             container.BindSingleton(projector);
+
             container.BindSingleton(boardSurface);
 
-            // --- Systems ---
-            var systems = _Game.Core.GameContext.Systems;
-            var events  = _Game.Core.GameContext.Events;
+            // ==== Pointer hover → events ====================================================
 
             var hoverSystem = new PointerHoverSystem(rayProvider, boardSurface, projector, events);
             systems.Register((IUpdatableSystem)hoverSystem);
 
-            // --- Visuals (pooled) ---
-            var visualsRootGO = new GameObject(string.IsNullOrWhiteSpace(visualsRootName) ? "GridVisuals" : visualsRootName);
-            visualsRootGO.transform.SetPositionAndRotation(boardSurface.transform.position, Quaternion.identity);
-            visualsRootGO.transform.SetParent(boardSurface.transform, worldPositionStays: true);
+            // ==== Grid visuals (pooled) =====================================================
 
-            // Pre-warm to number of placeable cells (≈ half the grid)
-            int approxPlaceable = Mathf.CeilToInt((grid.Size.Rows * grid.Size.Cols) * 0.5f);
-            var placeablePool = new GameObjectPool(placeableCellPrefab, approxPlaceable, visualsRootGO.transform);
+            Transform visualsRoot = visualsParent;
+            if (!visualsRoot)
+            {
+                var go = new GameObject(string.IsNullOrWhiteSpace(visualsRootName) ? "GridVisuals" : visualsRootName);
+                go.transform.SetParent(boardSurface.transform, true);
+                visualsRoot = go.transform;
+            }
 
-            // Single highlight instance
-            var hoverGO = Object.Instantiate(hoverHighlightPrefab, visualsRootGO.transform, worldPositionStays: false);
-            hoverGO.name = "HoverHighlight";
-            hoverGO.SetActive(false);
+            if (placeableCellPrefab && hoverHighlightPrefab)
+            {
+                int approxPlaceable = Mathf.CeilToInt(grid.Size.Rows * grid.Size.Cols * 0.5f);
+                var placeablePool = new GameObjectPool(placeableCellPrefab, approxPlaceable, visualsRoot);
 
-            // Create & bind the visuals service so others could resolve/Dispose if needed
-            var visualsSvc = new GridVisualsService(grid, boardSurface, projector, events, placeablePool, hoverGO, visualsRootGO.transform, surfaceLift);
-            container.BindSingleton(visualsSvc);
+                var hoverGO = Object.Instantiate(hoverHighlightPrefab, visualsRoot, false);
+                hoverGO.name = "HoverHighlight";
+                hoverGO.SetActive(false);
 
-            Debug.Log("[RuntimeInstaller] Runtime systems + visuals installed.");
+                var visualsSvc = new GridVisualsService(
+                    grid, boardSurface, projector, events, placeablePool, hoverGO, visualsRoot, surfaceLift);
+                container.BindSingleton(visualsSvc);
+            }
+            else
+            {
+                Debug.LogWarning("[RuntimeInstaller] Grid Visuals prefabs not set; skipping grid markers/highlight.");
+            }
+
+            // ==== Level runtime config ======================================================
+
+            if (!levelCatalogue)
+            {
+                Debug.LogError("[RuntimeInstaller] LevelCatalogue is not assigned.");
+                return;
+            }
+
+            var levelData = levelCatalogue.GetById(levelId);
+            if (levelData == null)
+            {
+                Debug.LogError($"[RuntimeInstaller] Level '{levelId}' not found in LevelCatalogue.");
+                return;
+            }
+
+            var level = new LevelRuntimeConfig(levelData);
+            container.BindSingleton(level);
+
+            // ==== Parents (units) ===========================================================
+
+            if (!unitsParent)
+            {
+                var up = new GameObject("Units").transform;
+                up.SetParent(boardSurface.transform, true);
+                unitsParent = up;
+            }
+
+            // ==== Characters stack (no combat; just spawn + track + (future) tick) ==========
+
+            var pools      = new CharacterPoolRegistry();
+            var repo       = new CharacterRepository();
+            var factory    = new CharacterFactory(pools /* no combat deps in this variant */);
+            var charSystem = new CharacterSystem(); // harmless to register now; useful when plugins arrive
+
+            container.BindSingleton(pools);
+            container.BindSingleton(repo);
+            container.BindSingleton(factory);
+            container.BindSingleton(charSystem);
+
+            systems.Register((IUpdatableSystem)charSystem);
+
+            // ==== Placement pipeline ========================================================
+
+            var validator  = new PlacementValidator(repo, grid);
+            container.BindSingleton(validator);
+
+            var previewSvc = new PlacementPreviewService(factory, boardSurface, projector, validator, unitsParent);
+            container.BindSingleton(previewSvc);
+
+            var placementSys = new PlacementControllerSystem(
+                events, grid, factory, repo, validator, previewSvc, unitsParent);
+            systems.Register((IUpdatableSystem)placementSys);
+
+            Debug.Log("[RuntimeInstaller] Runtime systems (selection, hover, visuals, level, characters, placement) installed.");
         }
     }
 }
