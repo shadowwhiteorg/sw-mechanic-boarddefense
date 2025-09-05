@@ -1,44 +1,63 @@
 ﻿using UnityEngine;
-using _Game.Interfaces;       
-using _Game.Runtime.Board;    
-using _Game.Runtime.Systems;  
-using _Game.Runtime.Visuals;  
-using _Game.Runtime.Characters;
-using _Game.Runtime.Core;     
-using _Game.Runtime.Placement;
-using _Game.Runtime.Levels;   
-using _Game.Runtime.Selection;
-using _Game.Utils;            
+
+using _Game.Core;                        // GameContext
+using _Game.Core.DI;                     // BaseInstaller
+using _Game.Interfaces;                  // IDIContainer, ISystemRunner, IEventBus
+
+// Board / grid / input
+using _Game.Runtime.Board;               // BoardSurface, BoardGrid, GridProjector, ScreenSpaceRayProvider
+
+// Optional hover & visuals
+using _Game.Runtime.Systems;             // PointerHoverSystem
+using _Game.Runtime.Visuals;             // GridVisualsService
+
+// Characters
+using _Game.Runtime.Characters;          // CharacterPoolRegistry, CharacterFactory, CharacterRepository
+using _Game.Runtime.Core;                // CharacterSystem
+
+// Placement
+using _Game.Runtime.Placement;           // PlacementValidator, PlacementPreviewService
+
+// Level data + selection
+using _Game.Runtime.Levels;              // LevelRuntimeConfig / LevelCatalogue
+using _Game.Runtime.Selection;           // CharacterSelectionSpawner, SelectableCharacterView
+
+// Pool util (for grid visuals)
+using _Game.Utils;                       // GameObjectPool
 
 namespace _Game.Core.DI
 {
-
+    /// <summary>
+    /// Scene-level installer: grid + visuals + characters + selection.
+    /// Matches the CharacterSelectionSystem ctor that takes BoardSurface and IEventBus.
+    /// </summary>
     public sealed class RuntimeInstaller : BaseInstaller
     {
-        [Header("Scene")]
-        [SerializeField] private BoardSurface boardSurface;
-        [SerializeField] private Camera       targetCamera;
+        // --------- Scene references ---------
+        [Header("Scene")] [SerializeField] private BoardSurface boardSurface;
+        [SerializeField] private Camera targetCamera;
 
         [Header("Selection Models")]
         [SerializeField] private Transform characterSelectionSpawnPoint;
         [SerializeField, Min(0.1f)] private float characterSpacing = 2f;
-        [SerializeField] private Transform selectionParent;
-        [SerializeField, Min(0.05f)] private float selectionPickRadius = 1.0f;
+        [SerializeField] private Transform selectionParent;   // parent for spawned selection models
+        [SerializeField, Min(0.05f)] private float selectionPickRadius = 1.0f; // world-units pick radius
 
         [Header("Placed Units Parent")]
         [SerializeField] private Transform unitsParent;
 
+        // --------- Visuals (optional) ---------
         [Header("Grid Visuals (Optional)")]
         [SerializeField] private GameObject placeableCellPrefab;
         [SerializeField] private GameObject hoverHighlightPrefab;
-        [SerializeField] private float surfaceLift = 0.01f;
+        [SerializeField, Min(0f)] private float surfaceLift = 0.01f;
         [SerializeField] private string visualsRootName = "GridVisuals";
         [SerializeField] private Transform visualsParent;
 
+        // --------- Level data ---------
         [Header("Level")]
         [SerializeField] private LevelCatalogue levelCatalogue;
         [SerializeField] private string levelId = "Level-1";
-
 
         public override void Install(IDIContainer container)
         {
@@ -63,22 +82,26 @@ namespace _Game.Core.DI
                 return;
             }
 
+            // ==== Core runtime services =====================================================
             var rayProvider = new ScreenSpaceRayProvider(targetCamera);
             container.BindSingleton<IRayProvider>(rayProvider);
 
             var grid = new BoardGrid(boardSurface.rows, boardSurface.cols, boardSurface.cellSize);
             container.BindSingleton(grid);
 
-            var projector = new GridProjector(grid, boardSurface);
+            var projector = new GridProjector(grid, boardSurface);   // TryWorldToCell + CellToWorldCenter
             container.BindSingleton(projector);
 
             container.BindSingleton(boardSurface);
 
+            // ==== Optional: pointer hover → events (hover highlight visuals) =================
             if (hoverHighlightPrefab || placeableCellPrefab)
             {
                 var hoverSystem = new PointerHoverSystem(rayProvider, boardSurface, projector, events);
                 systems.Register((IUpdatableSystem)hoverSystem);
             }
+
+            // ==== Grid visuals (pooled) =====================================================
             if (placeableCellPrefab || hoverHighlightPrefab)
             {
                 Transform visualsRoot = visualsParent;
@@ -99,7 +122,7 @@ namespace _Game.Core.DI
                 GameObject hoverGO = null;
                 if (hoverHighlightPrefab)
                 {
-                    hoverGO = Instantiate(hoverHighlightPrefab, visualsRoot, false);
+                    hoverGO = Object.Instantiate(hoverHighlightPrefab, visualsRoot, false);
                     hoverGO.name = "HoverHighlight";
                     hoverGO.SetActive(false);
                 }
@@ -109,6 +132,7 @@ namespace _Game.Core.DI
                 container.BindSingleton(visualsSvc);
             }
 
+            // ==== Level runtime config ======================================================
             var levelData = levelCatalogue.GetById(levelId);
             if (levelData == null)
             {
@@ -118,6 +142,7 @@ namespace _Game.Core.DI
             var level = new LevelRuntimeConfig(levelData);
             container.BindSingleton(level);
 
+            // ==== Parents (units / selection) ===============================================
             if (!unitsParent)
             {
                 var up = new GameObject("Units").transform;
@@ -138,6 +163,7 @@ namespace _Game.Core.DI
                 selectionParent = sel;
             }
 
+            // ==== Characters stack ==========================================================
             var pools      = new CharacterPoolRegistry();
             var repo       = new CharacterRepository();
             var factory    = new CharacterFactory(pools);
@@ -150,16 +176,19 @@ namespace _Game.Core.DI
 
             systems.Register((IUpdatableSystem)charSystem);
 
+            // ==== Placement validator (bounds + occupancy) ==================================
             var validator  = new PlacementValidator(repo, grid);
             container.BindSingleton(validator);
 
+            // ==== Placement preview service =================================================
             var previewSvc = new PlacementPreviewService(factory, boardSurface, projector, validator, unitsParent);
             container.BindSingleton(previewSvc);
-            
 
+            // ==== Spawn 3D selection models (no physics) ====================================
             var spawner     = new CharacterSelectionSpawner(level, characterSelectionSpawnPoint, characterSpacing, selectionParent);
             var selectables = spawner.Spawn(); // List<SelectableCharacterView>
 
+            // ==== Register selection + placement system =====================================
             var selectionSystem = new CharacterSelectionSystem(
                 rayProvider,
                 projector,
@@ -171,18 +200,19 @@ namespace _Game.Core.DI
                 unitsParent,
                 selectables,
                 GameContext.Events,
-                dragLift: 0.01f 
+                dragLift: 0.01f
             );
             systems.Register((IUpdatableSystem)selectionSystem);
             
-            var targeting = new Runtime.Combat.TargetingService(grid, repo);
-            container.BindSingleton(targeting);
-
-            var lifetime = new Runtime.Combat.CharacterLifetimeSystem(repo, events);
-            systems.Register((IUpdatableSystem)lifetime);
-
-            var enemySpawner = new Runtime.Combat.EnemySpawnerSystem(grid, factory, repo, level, unitsParent);
-            systems.Register((IUpdatableSystem)enemySpawner);
+            var spawnerSystem = new _Game.Runtime.Combat.EnemySpawnerSystem(
+                grid,
+                projector,
+                factory,
+                repo,
+                level,
+                unitsParent
+            );
+            systems.Register((_Game.Interfaces.IUpdatableSystem)spawnerSystem);
         }
     }
 }

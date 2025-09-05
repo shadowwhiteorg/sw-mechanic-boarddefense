@@ -44,7 +44,7 @@ GameObject:
   - component: {fileID: 801749346717141637}
   - component: {fileID: 3876279987039181602}
   m_Layer: 0
-  m_Name: CharacterView
+  m_Name: D1_CharacterView
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
