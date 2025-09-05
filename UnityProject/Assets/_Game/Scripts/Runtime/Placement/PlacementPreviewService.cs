@@ -112,7 +112,6 @@ namespace _Game.Runtime.Placement
                 return;
             }
 
-            // If we can derive a cell from the hit, tint using its validity; otherwise invalid
             bool valid = _projector.TryWorldToCell(hit, out var derived) && _validator.IsValid(derived);
 
             var pos = hit + _surface.WorldPlaneNormal * _lift;
@@ -122,7 +121,6 @@ namespace _Game.Runtime.Placement
             TintGhost(valid ? kValid : kInvalid);
         }
 
-        // ---------- Internals ----------
 
         private static GameObject CreateGhostInstance(
             CharacterArchetype archetype,

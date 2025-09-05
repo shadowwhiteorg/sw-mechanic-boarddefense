@@ -1,22 +1,15 @@
 ﻿using System.Collections.Generic;
 using _Game.Core.Events;
 using UnityEngine;
-
 using _Game.Enums;
 using _Game.Interfaces;
 using _Game.Runtime.Board;
 using _Game.Runtime.Characters;
 using _Game.Runtime.Core;
 using _Game.Runtime.Placement;
-using _Game.Runtime.Systems; // HoverCellChangedEvent
 
 namespace _Game.Runtime.Selection
 {
-    /// <summary>
-    /// Bounds-based picking (Renderer.bounds), free-drag on BoardSurface.
-    /// On mouse up: snap to active cell (hover) or cell under cursor; else reset.
-    /// Uses factory.SpawnAtWorld() so the spawned unit is positioned at the grid center.
-    /// </summary>
     public sealed class CharacterSelectionSystem : IUpdatableSystem
     {
         private readonly IRayProvider _rayProvider;
@@ -27,14 +20,14 @@ namespace _Game.Runtime.Selection
         private readonly CharacterRepository _repo;
         private readonly PlacementValidator _validator;
         private readonly Transform _placedParent;
-        private readonly List<SelectableCharacterView> _selectables; // mutable (remove on success)
+        private readonly List<SelectableCharacterView> _selectables;
         private readonly IEventBus _events;
         private readonly float _dragLift;
 
         private SelectableCharacterView _selected;
         private bool _dragging;
-        private Cell? _activeCell;        // updated from HoverCellChangedEvent
-        private Vector3 _cursorWorld;     // last plane hit
+        private Cell? _activeCell;
+        private Vector3 _cursorWorld;
 
         public CharacterSelectionSystem(
             IRayProvider rayProvider,
@@ -131,14 +124,12 @@ namespace _Game.Runtime.Selection
                 return;
             }
 
-            // Fallback to the cell under the cursor
             if (_projector.TryWorldToCell(_cursorWorld, out var cell) && _validator.IsValid(cell))
             {
                 PlaceAndFinalize(cell);
                 return;
             }
 
-            // No valid cell → reset
             CancelDrag();
         }
 
@@ -160,6 +151,7 @@ namespace _Game.Runtime.Selection
             _repo.Add(entity, cell);
 
             // Remove selection model from pool and destroy it
+            // TODO: Use Object Pool
             _selectables.Remove(_selected);
             Object.Destroy(_selected.gameObject);
             _selected = null;

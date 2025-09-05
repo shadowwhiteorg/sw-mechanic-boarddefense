@@ -18,19 +18,11 @@ namespace _Game.Runtime.Characters
         {
             _pools = pools;
         }
-
-        /// <summary>
-        /// Legacy spawn (position must be set by caller later). Prefer SpawnAtWorld().
-        /// </summary>
         public CharacterEntity Spawn(CharacterArchetype archetype, Cell cell, Transform parent, CharacterRole role)
         {
             return InternalCreate(archetype, role, parent);
         }
-
-        /// <summary>
-        /// Correct, robust spawn: instantiates the view and constructs CharacterEntity
-        /// with (id, archetype, view). Sets world position to the provided point.
-        /// </summary>
+        
         public CharacterEntity SpawnAtWorld(
             CharacterArchetype archetype,
             Vector3 worldPosition,
@@ -40,15 +32,10 @@ namespace _Game.Runtime.Characters
         {
             var entity = InternalCreate(archetype, role, parent);
 
-            // Make sure we keep world space when parenting, then set world position.
             var root = entity.View.Root;
             root.SetParent(parent, worldPositionStays: true);
             root.position = worldPosition;
 
-            // If you want a canonical rotation relative to the board, set it here.
-            // root.rotation = Quaternion.identity;
-
-            // Optionally store the cell on the entity if your model has it:
             entity.Cell = cell;
 
             return entity;
@@ -56,11 +43,9 @@ namespace _Game.Runtime.Characters
 
         private CharacterEntity InternalCreate(CharacterArchetype archetype, CharacterRole role, Transform parent)
         {
-            // Acquire/instantiate a view
             GameObject go;
             if (archetype.viewPrefab != null)
             {
-                // Instantiate under parent, keep world transform (we'll set position later)
                 go = Object.Instantiate(archetype.viewPrefab, parent, worldPositionStays: true);
             }
             else
@@ -69,12 +54,10 @@ namespace _Game.Runtime.Characters
                 go.transform.SetParent(parent, worldPositionStays: true);
             }
 
-            // Ensure we have a view adapter
             var view = go.GetComponent<ICharacterView>();
             if (view == null)
                 view = go.AddComponent<CharacterView>();
 
-            // IMPORTANT: construct with the 3-arg ctor (id, archetype, view)
             var id = _nextId++;
             var entity = new CharacterEntity(id, archetype, view)
             {

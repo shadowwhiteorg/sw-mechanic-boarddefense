@@ -21,10 +21,10 @@ namespace _Game.Runtime.Levels
         public CharacterArchetype[] allowedDefenseArchetypes;
 
         [Header("Enemy Waves")]
-        public List<EnemyWave> waves = new(); // order is spawn order
+        public List<EnemyWave> waves = new(); 
 
         [Header("Enemy Paths")]
-        public PathAsset[] paths; // optional: multiple lanes / routes
+        public PathAsset[] paths; 
     }
 
     [Serializable]
@@ -40,6 +40,6 @@ namespace _Game.Runtime.Levels
     [CreateAssetMenu(menuName = "_Game/Levels/Path", fileName = "PathAsset")]
     public sealed class PathAsset : ScriptableObject
     {
-        public Transform[] waypoints; // or bake Vector3[] if preferred
+        public Transform[] waypoints;
     }
 }

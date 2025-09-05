@@ -6,10 +6,6 @@ using UnityEngine;
 
 namespace _Game.Runtime.Systems
 {
-    /// <summary>
-    /// Projects the current pointer into board space and fires hover events.
-    /// No physics used — purely math ray/plane intersection.
-    /// </summary>
     public sealed class PointerHoverSystem : IUpdatableSystem
     {
         private readonly IRayProvider _rayProvider;

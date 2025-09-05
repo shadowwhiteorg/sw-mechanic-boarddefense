@@ -62,16 +62,13 @@ namespace _Game.Runtime.Placement
         {
             if (!_inPlacement) return;
 
-            // Keep the ghost snapped to the latest hovered cell
             _preview.UpdateTo(_activeCell);
 
-            // Place on LMB release
             if (Input.GetMouseButtonUp(0))
             {
                 TryPlace();
             }
 
-            // Cancel on RMB or ESC
             if (Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.Escape))
             {
                 CancelPlacement();
@@ -84,7 +81,6 @@ namespace _Game.Runtime.Placement
             _inPlacement = true;
             _preview.Begin(_selected);
 
-            // optional: broadcast mode change if your UI needs it
             _events.Fire(new PlacementModeChangedEvent { IsActive = true });
         }
 
@@ -106,7 +102,6 @@ namespace _Game.Runtime.Placement
             var entity = _factory.SpawnAtWorld(_selected, center, cell, _unitsParent, CharacterRole.Defense);
             _repo.Add(entity, cell);
 
-            // Finish placement (single-place flow). If you want multi-place, remove the End() and _inPlacement = false
             _preview.End();
             _inPlacement = false;
             _events.Fire(new PlacementModeChangedEvent { IsActive = false });
