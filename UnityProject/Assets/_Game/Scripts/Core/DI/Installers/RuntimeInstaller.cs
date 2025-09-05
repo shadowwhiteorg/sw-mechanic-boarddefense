@@ -1,62 +1,68 @@
 ﻿using UnityEngine;
-using _Game.Interfaces;
-using _Game.Runtime.Board;
-using _Game.Runtime.Core;
-using _Game.Runtime.Systems;
-using _Game.Runtime.Visuals;
-using _Game.Core.DI;
-using _Game.Utils;
+using _Game.Interfaces;       
+using _Game.Runtime.Board;    
+using _Game.Runtime.Systems;  
+using _Game.Runtime.Visuals;  
+using _Game.Runtime.Characters;
+using _Game.Runtime.Core;     
+using _Game.Runtime.Placement;
+using _Game.Runtime.Levels;   
+using _Game.Runtime.Selection;
+using _Game.Utils;            
 
 namespace _Game.Core.DI
 {
+
     public sealed class RuntimeInstaller : BaseInstaller
     {
-        [Header("Scene References")]
+        [Header("Scene")]
         [SerializeField] private BoardSurface boardSurface;
-        [SerializeField] private Camera targetCamera;
+        [SerializeField] private Camera       targetCamera;
 
-        [Header("Grid Visuals")]
-        [Tooltip("Prefab with a SpriteRenderer (static marker for each placeable cell).")]
+        [Header("Selection Models")]
+        [SerializeField] private Transform characterSelectionSpawnPoint;
+        [SerializeField, Min(0.1f)] private float characterSpacing = 2f;
+        [SerializeField] private Transform selectionParent;
+        [SerializeField, Min(0.05f)] private float selectionPickRadius = 1.0f;
+
+        [Header("Placed Units Parent")]
+        [SerializeField] private Transform unitsParent;
+
+        [Header("Grid Visuals (Optional)")]
         [SerializeField] private GameObject placeableCellPrefab;
-
-        [Tooltip("Prefab with a SpriteRenderer (single moving highlight).")]
         [SerializeField] private GameObject hoverHighlightPrefab;
-
-        [Tooltip("Lift sprites slightly off the surface to avoid z-fighting.")]
-        [SerializeField, Min(0f)] private float surfaceLift = 0.01f;
-
-        [Tooltip("Optional parent name for all grid visuals.")]
+        [SerializeField] private float surfaceLift = 0.01f;
         [SerializeField] private string visualsRootName = "GridVisuals";
+        [SerializeField] private Transform visualsParent;
+
+        [Header("Level")]
+        [SerializeField] private LevelCatalogue levelCatalogue;
+        [SerializeField] private string levelId = "Level-1";
+
 
         public override void Install(IDIContainer container)
         {
-            // --- Sanity checks ---
-            if (boardSurface == null)
+            var events  = GameContext.Events;
+            var systems = GameContext.Systems;
+
+            // ---- Guards ----
+            if (!boardSurface)
             {
                 Debug.LogError("[RuntimeInstaller] BoardSurface is not assigned.");
                 return;
             }
-
-            if (targetCamera == null) targetCamera = Camera.main;
-            if (targetCamera == null)
+            if (!targetCamera) targetCamera = Camera.main;
+            if (!targetCamera)
             {
                 Debug.LogError("[RuntimeInstaller] Target Camera is null (and no MainCamera found).");
                 return;
             }
-
-            if (placeableCellPrefab == null)
+            if (!levelCatalogue)
             {
-                Debug.LogError("[RuntimeInstaller] PlaceableCellPrefab is not assigned.");
+                Debug.LogError("[RuntimeInstaller] LevelCatalogue is not assigned.");
                 return;
             }
 
-            if (hoverHighlightPrefab == null)
-            {
-                Debug.LogError("[RuntimeInstaller] HoverHighlightPrefab is not assigned.");
-                return;
-            }
-
-            // --- Core runtime bindings ---
             var rayProvider = new ScreenSpaceRayProvider(targetCamera);
             container.BindSingleton<IRayProvider>(rayProvider);
 
@@ -65,34 +71,109 @@ namespace _Game.Core.DI
 
             var projector = new GridProjector(grid, boardSurface);
             container.BindSingleton(projector);
+
             container.BindSingleton(boardSurface);
 
-            // --- Systems ---
-            var systems = _Game.Core.GameContext.Systems;
-            var events  = _Game.Core.GameContext.Events;
+            if (hoverHighlightPrefab || placeableCellPrefab)
+            {
+                var hoverSystem = new PointerHoverSystem(rayProvider, boardSurface, projector, events);
+                systems.Register((IUpdatableSystem)hoverSystem);
+            }
+            if (placeableCellPrefab || hoverHighlightPrefab)
+            {
+                Transform visualsRoot = visualsParent;
+                if (!visualsRoot)
+                {
+                    var go = new GameObject(string.IsNullOrWhiteSpace(visualsRootName) ? "GridVisuals" : visualsRootName);
+                    go.transform.SetParent(boardSurface.transform, true);
+                    visualsRoot = go.transform;
+                }
 
-            var hoverSystem = new PointerHoverSystem(rayProvider, boardSurface, projector, events);
-            systems.Register((IUpdatableSystem)hoverSystem);
+                GameObjectPool placeablePool = null;
+                if (placeableCellPrefab)
+                {
+                    int approxPlaceable = Mathf.CeilToInt(grid.Size.Rows * grid.Size.Cols * 0.5f);
+                    placeablePool = new GameObjectPool(placeableCellPrefab, approxPlaceable, visualsRoot);
+                }
 
-            // --- Visuals (pooled) ---
-            var visualsRootGO = new GameObject(string.IsNullOrWhiteSpace(visualsRootName) ? "GridVisuals" : visualsRootName);
-            visualsRootGO.transform.SetPositionAndRotation(boardSurface.transform.position, Quaternion.identity);
-            visualsRootGO.transform.SetParent(boardSurface.transform, worldPositionStays: true);
+                GameObject hoverGO = null;
+                if (hoverHighlightPrefab)
+                {
+                    hoverGO = Instantiate(hoverHighlightPrefab, visualsRoot, false);
+                    hoverGO.name = "HoverHighlight";
+                    hoverGO.SetActive(false);
+                }
 
-            // Pre-warm to number of placeable cells (≈ half the grid)
-            int approxPlaceable = Mathf.CeilToInt((grid.Size.Rows * grid.Size.Cols) * 0.5f);
-            var placeablePool = new GameObjectPool(placeableCellPrefab, approxPlaceable, visualsRootGO.transform);
+                var visualsSvc = new GridVisualsService(
+                    grid, boardSurface, projector, events, placeablePool, hoverGO, visualsRoot, surfaceLift);
+                container.BindSingleton(visualsSvc);
+            }
 
-            // Single highlight instance
-            var hoverGO = Object.Instantiate(hoverHighlightPrefab, visualsRootGO.transform, worldPositionStays: false);
-            hoverGO.name = "HoverHighlight";
-            hoverGO.SetActive(false);
+            var levelData = levelCatalogue.GetById(levelId);
+            if (levelData == null)
+            {
+                Debug.LogError($"[RuntimeInstaller] Level '{levelId}' not found in LevelCatalogue.");
+                return;
+            }
+            var level = new LevelRuntimeConfig(levelData);
+            container.BindSingleton(level);
 
-            // Create & bind the visuals service so others could resolve/Dispose if needed
-            var visualsSvc = new GridVisualsService(grid, boardSurface, projector, events, placeablePool, hoverGO, visualsRootGO.transform, surfaceLift);
-            container.BindSingleton(visualsSvc);
+            if (!unitsParent)
+            {
+                var up = new GameObject("Units").transform;
+                up.SetParent(boardSurface.transform, true);
+                unitsParent = up;
+            }
+            if (!characterSelectionSpawnPoint)
+            {
+                var sp = new GameObject("CharacterSelectionSpawnPoint").transform;
+                sp.SetParent(boardSurface.transform, true);
+                sp.position = boardSurface.transform.position;
+                characterSelectionSpawnPoint = sp;
+            }
+            if (!selectionParent)
+            {
+                var sel = new GameObject("SelectionRoot").transform;
+                sel.SetParent(boardSurface.transform, true);
+                selectionParent = sel;
+            }
 
-            Debug.Log("[RuntimeInstaller] Runtime systems + visuals installed.");
+            var pools      = new CharacterPoolRegistry();
+            var repo       = new CharacterRepository();
+            var factory    = new CharacterFactory(pools);
+            var charSystem = new CharacterSystem();
+
+            container.BindSingleton(pools);
+            container.BindSingleton(repo);
+            container.BindSingleton(factory);
+            container.BindSingleton(charSystem);
+
+            systems.Register((IUpdatableSystem)charSystem);
+
+            var validator  = new PlacementValidator(repo, grid);
+            container.BindSingleton(validator);
+
+            var previewSvc = new PlacementPreviewService(factory, boardSurface, projector, validator, unitsParent);
+            container.BindSingleton(previewSvc);
+            
+
+            var spawner     = new CharacterSelectionSpawner(level, characterSelectionSpawnPoint, characterSpacing, selectionParent);
+            var selectables = spawner.Spawn(); // List<SelectableCharacterView>
+
+            var selectionSystem = new CharacterSelectionSystem(
+                rayProvider,
+                projector,
+                grid,
+                boardSurface,
+                factory,
+                repo,
+                validator,
+                unitsParent,
+                selectables,
+                GameContext.Events,
+                dragLift: 0.01f 
+            );
+            systems.Register((IUpdatableSystem)selectionSystem);
         }
     }
 }

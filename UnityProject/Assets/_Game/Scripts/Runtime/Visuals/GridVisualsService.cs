@@ -9,10 +9,6 @@ using _Game.Utils;
 
 namespace _Game.Runtime.Visuals
 {
-    /// <summary>
-    /// Builds pooled markers for all placeable cells and drives a single hover highlight sprite.
-    /// Event-driven (HoverCellChangedEvent) and DI-managed; no per-frame Update here.
-    /// </summary>
     public sealed class GridVisualsService : IDisposable
     {
         private readonly BoardGrid _grid;

@@ -16,7 +16,11 @@ namespace _Game.Runtime.Systems
         private Cell?   _lastCell;
         private Vector3 _lastWorld;
 
-        public PointerHoverSystem(IRayProvider rayProvider, BoardSurface surface, GridProjector projector, IEventBus events)
+        public PointerHoverSystem(
+            IRayProvider rayProvider,
+            BoardSurface surface,
+            GridProjector projector,
+            IEventBus events)
         {
             _rayProvider = rayProvider;
             _surface     = surface;
@@ -26,10 +30,8 @@ namespace _Game.Runtime.Systems
 
         public void Tick()
         {
-            
-            if (_surface == null || _rayProvider == null) return;
-
             var ray = _rayProvider.PointerToRay(Input.mousePosition);
+
             if (InputProjectionMath.TryRayPlane(ray, _surface.WorldPlanePoint, _surface.WorldPlaneNormal, out var hit))
             {
                 if (_projector.TryWorldToCell(hit, out var cell))
@@ -41,22 +43,16 @@ namespace _Game.Runtime.Systems
                         _events.Fire(new HoverCellChangedEvent(cell, hit));
                     }
                 }
-                else
-                {
-                    if (_lastCell.HasValue)
-                    {
-                        _lastCell = null;
-                        _events.Fire(new HoverCellChangedEvent(null, hit));
-                    }
-                }
-            }
-            else
-            {
-                if (_lastCell.HasValue)
+                else if (_lastCell.HasValue)
                 {
                     _lastCell = null;
-                    _events.Fire(new HoverCellChangedEvent(null, default));
+                    _events.Fire(new HoverCellChangedEvent(null, hit));
                 }
+            }
+            else if (_lastCell.HasValue)
+            {
+                _lastCell = null;
+                _events.Fire(new HoverCellChangedEvent(null, default));
             }
         }
     }

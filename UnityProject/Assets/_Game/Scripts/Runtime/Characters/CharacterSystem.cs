@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace _Game.Runtime.Characters
 {
-    /// <summary>Ticks all registered character plugins.</summary>
     public sealed class CharacterSystem : IUpdatableSystem
     {
         private readonly List<ICharacterPlugin> _tickables = new();

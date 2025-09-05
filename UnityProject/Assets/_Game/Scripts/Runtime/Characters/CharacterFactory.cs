@@ -1,11 +1,11 @@
-﻿using _Game.Enums;
+﻿using UnityEngine;
+using _Game.Enums;
 using _Game.Interfaces;
-using UnityEngine;
-using _Game.Runtime.Core;
+using _Game.Runtime.Board;
 using _Game.Runtime.Characters.Config;
-using _Game.Runtime.Characters.View;
 using _Game.Runtime.Characters.Plugins;
-using _Game.Utils;
+using _Game.Runtime.Characters.View;
+using _Game.Runtime.Core;
 
 namespace _Game.Runtime.Characters
 {
@@ -14,60 +14,78 @@ namespace _Game.Runtime.Characters
         private int _nextId = 1;
         private readonly CharacterPoolRegistry _pools;
 
-        public CharacterFactory(CharacterPoolRegistry pools) { _pools = pools; }
-
-        public CharacterEntity Spawn(
+        public CharacterFactory(CharacterPoolRegistry pools)
+        {
+            _pools = pools;
+        }
+        public CharacterEntity Spawn(CharacterArchetype archetype, Cell cell, Transform parent, CharacterRole role)
+        {
+            return InternalCreate(archetype, role, parent);
+        }
+        
+        public CharacterEntity SpawnAtWorld(
             CharacterArchetype archetype,
+            Vector3 worldPosition,
             Cell cell,
             Transform parent,
-            CharacterRole role,
-            Vector3[] enemyPath = null)
+            CharacterRole role)
         {
-            var pool = _pools.GetUnitPool(archetype, () => new GameObjectPool(archetype.viewPrefab, 8, parent));
-            var go = pool.Get();
-            var view = go.GetComponent<ICharacterView>() ?? go.AddComponent<CharacterView>();
+            var entity = InternalCreate(archetype, role, parent);
+
+            var root = entity.View.Root;
+            root.SetParent(parent, worldPositionStays: true);
+            root.position = worldPosition;
+
+            entity.Cell = cell;
+
+            return entity;
+        }
+
+        private CharacterEntity InternalCreate(CharacterArchetype archetype, CharacterRole role, Transform parent)
+        {
+            GameObject go;
+            if (archetype.viewPrefab != null)
+            {
+                go = Object.Instantiate(archetype.viewPrefab, parent, worldPositionStays: true);
+            }
+            else
+            {
+                go = new GameObject("CharacterView");
+                go.transform.SetParent(parent, worldPositionStays: true);
+            }
+
+            var view = go.GetComponent<ICharacterView>();
+            if (view == null)
+                view = go.AddComponent<CharacterView>();
 
             var id = _nextId++;
-            var e = new CharacterEntity(id, archetype, view) { Cell = cell, Role = role };
-
-            // Common plugins
-            e.AddPlugin(new HealthPlugin(archetype.baseHealth));
-
-            // Role-specific plugins
-            if (role == CharacterRole.Enemy)
+            var entity = new CharacterEntity(id, archetype, view)
             {
-                if (archetype.moveSpeed > 0f && enemyPath != null && enemyPath.Length > 0)
-                    e.AddPlugin(new MovementPlugin(archetype.moveSpeed, enemyPath));
-                e.AddPlugin(new MeleeAttackPlugin(archetype.attackRate, Mathf.CeilToInt(archetype.attackDamage)));
-            }
-            else // Defense
-            {
-                e.AddPlugin(new MeleeAttackPlugin(archetype.attackRate, Mathf.CeilToInt(archetype.attackDamage)));
-            }
+                Role = role
+            };
 
-            foreach (var p in e.Plugins) p.OnSpawn(e);
-
-            view.Bind(e);
-            view.SetGhostVisual(false, true);
+            view.Bind(entity);
             view.Show();
 
-            return e;
+            AttachDefaultPlugins(entity);
+
+            return entity;
         }
 
-        public GameObject GetPreview(CharacterArchetype a, Transform parent)
+        private static void AttachDefaultPlugins(CharacterEntity e)
         {
-            var pool = _pools.GetPreviewPool(a, () => new GameObjectPool(a.viewPrefab, 1, parent));
-            var go = pool.Get();
-            var view = go.GetComponent<ICharacterView>() ?? go.AddComponent<CharacterView>();
-            view.SetGhostVisual(true, false);
-            view.Show();
-            return go;
-        }
-
-        public void ReturnPreview(CharacterArchetype a, GameObject instance)
-        {
-            var pool = _pools.GetPreviewPool(a, () => new GameObjectPool(a.viewPrefab, 1, instance.transform.parent));
-            pool.Return(instance);
+            // Example default wiring; align with your actual plugin policy
+            // TODO: Add plugins
+            
+            // e.AddPlugin(new HealthPlugin(e, max: e.Archetype.baseHealth));
+            // if (e.Role == CharacterRole.Defense)
+            // {
+            //     e.AddPlugin(new MeleeAttackPlugin( e.Archetype.attackRate,e.Archetype.attackDamage));
+            // }
+            // else if (e.Role == CharacterRole.Enemy)
+            // {
+            //     e.AddPlugin(new MovementPlugin(e, e.Archetype.moveSpeed));
+            // }
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using _Game.Core.DI;
 using _Game.Interfaces;
 
 namespace _Game.Core.DI

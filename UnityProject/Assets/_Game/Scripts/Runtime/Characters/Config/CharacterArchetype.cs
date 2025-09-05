@@ -12,7 +12,7 @@ namespace _Game.Runtime.Characters.Config
         public bool isEnemy;
 
         [Header("View")]
-        public GameObject viewPrefab; // should include CharacterView (or it will be added)
+        public GameObject viewPrefab;
 
         [Header("Base Stats")]
         [Min(1)] public int baseHealth = 10;

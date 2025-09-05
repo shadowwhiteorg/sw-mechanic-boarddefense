@@ -18,7 +18,7 @@ namespace _Game.Runtime.Characters.View
         {
             if (tintables == null) return;
             var a = ghost ? 0.6f : 1f;
-            var baseCol = valid ? Color.white : new Color(1f, 0.35f, 0.35f, 1f);
+            var baseCol = valid ? Color.white : new Color(.4f, 0.15f, 0.35f, 1f);
             foreach (var r in tintables)
             {
                 if (!r) continue;
