@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using _Game.Core.Events;
 using UnityEngine;
 
 using _Game.Enums;
@@ -7,15 +8,14 @@ using _Game.Runtime.Board;
 using _Game.Runtime.Characters;
 using _Game.Runtime.Core;
 using _Game.Runtime.Placement;
+using _Game.Runtime.Systems; // HoverCellChangedEvent
 
 namespace _Game.Runtime.Selection
 {
     /// <summary>
-    /// NO-PHYSICS selection + drag-to-place:
-    /// - MouseDown: pick the closest selectable whose Renderer.bounds AABB intersects the pointer ray.
-    /// - While held: project pointer onto the BoardSurface plane, snap to grid cell center, show selection there.
-    /// - MouseUp: place if valid; else snap back to initial position.
-    /// Rotation-proof (uses BoardSurface.WorldPlanePoint/WorldPlaneNormal).
+    /// Bounds-based picking (Renderer.bounds), free-drag on BoardSurface.
+    /// On mouse up: snap to active cell (hover) or cell under cursor; else reset.
+    /// Uses factory.SpawnAtWorld() so the spawned unit is positioned at the grid center.
     /// </summary>
     public sealed class CharacterSelectionSystem : IUpdatableSystem
     {
@@ -27,21 +27,27 @@ namespace _Game.Runtime.Selection
         private readonly CharacterRepository _repo;
         private readonly PlacementValidator _validator;
         private readonly Transform _placedParent;
-        private readonly IReadOnlyList<SelectableCharacterView> _selectables;
+        private readonly List<SelectableCharacterView> _selectables; // mutable (remove on success)
+        private readonly IEventBus _events;
+        private readonly float _dragLift;
 
         private SelectableCharacterView _selected;
         private bool _dragging;
+        private Cell? _activeCell;        // updated from HoverCellChangedEvent
+        private Vector3 _cursorWorld;     // last plane hit
 
         public CharacterSelectionSystem(
             IRayProvider rayProvider,
             GridProjector projector,
             BoardGrid grid,
-            BoardSurface surface,                  // << use board's canonical plane
+            BoardSurface surface,
             CharacterFactory factory,
             CharacterRepository repo,
             PlacementValidator validator,
             Transform placedParent,
-            IReadOnlyList<SelectableCharacterView> selectables)
+            List<SelectableCharacterView> selectables,
+            IEventBus events,
+            float dragLift = 0.01f)
         {
             _rayProvider  = rayProvider;
             _projector    = projector;
@@ -52,6 +58,10 @@ namespace _Game.Runtime.Selection
             _validator    = validator;
             _placedParent = placedParent;
             _selectables  = selectables;
+            _events       = events;
+            _dragLift     = Mathf.Max(0f, dragLift);
+
+            _events.Subscribe<HoverCellChangedEvent>(OnHoverCellChanged);
         }
 
         public void Tick()
@@ -63,23 +73,23 @@ namespace _Game.Runtime.Selection
             {
                 var ray = _rayProvider.PointerToRay(Input.mousePosition);
 
-                // Project pointer to board plane → world point → grid cell
                 if (InputProjectionMath.TryRayPlane(
                         ray,
                         _surface.WorldPlanePoint,
                         _surface.WorldPlaneNormal,
-                        out var hitWorld)
-                    && _projector.TryWorldToCell(hitWorld, out var cell))
+                        out var hitWorld))
                 {
-                    var centerWorld = _projector.CellToWorldCenter(cell);
-                    _selected.transform.position = centerWorld;
+                    _cursorWorld = hitWorld;
+
+                    // Free move with tiny lift to prevent z-fighting
+                    var lifted = hitWorld + _surface.WorldPlaneNormal * _dragLift;
+                    _selected.transform.position = lifted;
 
                     if (Input.GetMouseButtonUp(0))
-                        EndDrag(cell);
+                        TryEndDrag();
                 }
                 else
                 {
-                    // No valid cell under pointer — dropping cancels.
                     if (Input.GetMouseButtonUp(0))
                         CancelDrag();
                 }
@@ -93,7 +103,6 @@ namespace _Game.Runtime.Selection
             SelectableCharacterView best = null;
             float bestT = float.PositiveInfinity;
 
-            // Bounds-based picking (no colliders, no Physics.Raycast)
             for (int i = 0; i < _selectables.Count; i++)
             {
                 var view = _selectables[i];
@@ -113,23 +122,46 @@ namespace _Game.Runtime.Selection
             }
         }
 
-        private void EndDrag(Cell cell)
+        private void TryEndDrag()
+        {
+            // Prefer the currently "activated" (hovered) cell
+            if (_activeCell.HasValue && _validator.IsValid(_activeCell.Value))
+            {
+                PlaceAndFinalize(_activeCell.Value);
+                return;
+            }
+
+            // Fallback to the cell under the cursor
+            if (_projector.TryWorldToCell(_cursorWorld, out var cell) && _validator.IsValid(cell))
+            {
+                PlaceAndFinalize(cell);
+                return;
+            }
+
+            // No valid cell → reset
+            CancelDrag();
+        }
+
+        private void PlaceAndFinalize(Cell cell)
         {
             _dragging = false;
 
-            if (_validator.IsValid(cell))
-            {
-                var entity = _factory.Spawn(_selected.Archetype, cell, _placedParent, CharacterRole.Defense);
-                _repo.Add(entity, cell);
+            // Snap to grid center
+            var worldCenter = _projector.CellToWorldCenter(cell);
 
-                // We placed the real unit, remove the selection model.
-                Object.Destroy(_selected.gameObject);
-            }
-            else
-            {
-                _selected.ResetPosition();
-            }
+            // Spawn at worldCenter so we never inherit prefab/selection offsets
+            var entity = _factory.SpawnAtWorld(
+                _selected.Archetype,
+                worldCenter,
+                cell,
+                _placedParent,
+                CharacterRole.Defense);
 
+            _repo.Add(entity, cell);
+
+            // Remove selection model from pool and destroy it
+            _selectables.Remove(_selected);
+            Object.Destroy(_selected.gameObject);
             _selected = null;
         }
 
@@ -137,8 +169,15 @@ namespace _Game.Runtime.Selection
         {
             _dragging = false;
             if (_selected != null)
-                _selected.ResetPosition();
-            _selected = null;
+            {
+                _selected.ResetPosition(); // remains selectable after failure
+                _selected = null;
+            }
+        }
+
+        private void OnHoverCellChanged(HoverCellChangedEvent e)
+        {
+            _activeCell = e.Cell; // may be null
         }
     }
 }

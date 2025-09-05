@@ -209,12 +209,14 @@ namespace _Game.Core.DI
                 rayProvider,
                 projector,
                 grid,
-                boardSurface,    // <-- plane source
+                boardSurface,          // plane source
                 factory,
                 repo,
                 validator,
                 unitsParent,
-                selectables
+                selectables,           // NOTE: List<SelectableCharacterView>
+                GameContext.Events,    // to receive HoverCellChangedEvent
+                dragLift: 0.01f        // tiny lift while dragging (optional)
             );
             systems.Register((IUpdatableSystem)selectionSystem);
 

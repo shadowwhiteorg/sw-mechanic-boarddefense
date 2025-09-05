@@ -12,9 +12,9 @@ namespace _Game.Core.Events
     }
 
     /// <summary>Broadcast when placement mode is toggled (enter/exit).</summary>
-    public readonly struct PlacementModeChangedEvent : IGameEvent
+    public struct PlacementModeChangedEvent : IGameEvent
     {
-        public readonly bool IsActive;
+        public bool IsActive;
         public PlacementModeChangedEvent(bool active) { IsActive = active; }
     }
 
