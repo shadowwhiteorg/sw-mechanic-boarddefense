@@ -1,11 +1,10 @@
 ﻿using _Game.Runtime.Board;
-using _Game.Runtime.Characters;
 using _Game.Runtime.Core;
-using UnityEngine;
+using _Game.Runtime.Characters;
 
 namespace _Game.Runtime.Placement
 {
-    public class PlacementValidator
+    public sealed class PlacementValidator
     {
         private readonly CharacterRepository _repo;
         private readonly BoardGrid _grid;
@@ -18,7 +17,10 @@ namespace _Game.Runtime.Placement
 
         public bool IsValid(Cell cell)
         {
-            return _grid.InBounds(cell) && !_repo.IsOccupied(cell);
+            if (!_grid.InBounds(cell)) return false;
+            if (!_grid.IsDefensePlacementAllowed(cell)) return false;
+            if (_repo.IsOccupied(cell)) return false;
+            return true;
         }
     }
 }

@@ -1,96 +1,81 @@
-﻿using _Game.Core.Events;
-using _Game.Enums;
+﻿using UnityEngine;
 using _Game.Interfaces;
+using _Game.Core.Events;
+using _Game.Enums;
+using _Game.Runtime.Core;
 using _Game.Runtime.Board;
 using _Game.Runtime.Characters;
-using _Game.Runtime.Core;
-using UnityEngine;
 
 namespace _Game.Runtime.Placement
 {
-    public class PlacementControllerSystem : IUpdatableSystem
+    /// <summary>
+    /// Listens to selection and hover events, confirms or cancels placement.
+    /// </summary>
+    public sealed class PlacementControllerSystem : IUpdatableSystem
     {
-        private readonly IEventBus _eventBus;
+        private readonly IEventBus _events;
         private readonly BoardGrid _grid;
         private readonly CharacterFactory _factory;
         private readonly CharacterRepository _repo;
         private readonly PlacementValidator _validator;
         private readonly PlacementPreviewService _preview;
-        private readonly Transform _parent;
+        private readonly Transform _unitsParent;
 
-        private Cell? _hoveredCell;
-        private bool _isDragging;
+        private Cell? _hoverCell;
 
         public PlacementControllerSystem(
-            IEventBus eventBus,
+            IEventBus events,
             BoardGrid grid,
             CharacterFactory factory,
             CharacterRepository repo,
             PlacementValidator validator,
             PlacementPreviewService preview,
-            Transform parent)
+            Transform unitsParent)
         {
-            _eventBus = eventBus;
-            _grid = grid;
-            _factory = factory;
-            _repo = repo;
-            _validator = validator;
-            _preview = preview;
-            _parent = parent;
+            _events = events; _grid = grid; _factory = factory; _repo = repo;
+            _validator = validator; _preview = preview; _unitsParent = unitsParent;
 
-            _eventBus.Subscribe<CharacterSelectedEvent>(OnCharacterSelected);
-            _eventBus.Subscribe<HoverCellChangedEvent>(OnHoverCellChanged);
-        }
-
-        public void Tick()
-        {
-            if (_preview.CurrentArchetype == null)
-                return;
-
-            // Begin drag
-            if (!_isDragging && Input.GetMouseButtonDown(0))
-            {
-                _isDragging = true;
-                _eventBus.Fire(new PlacementModeChangedEvent(true));
-            }
-
-            // Drag update
-            if (_isDragging && _hoveredCell.HasValue)
-            {
-                _preview.UpdateTo(_hoveredCell);
-            }
-
-            // Drop
-            if (_isDragging && Input.GetMouseButtonUp(0))
-            {
-                _isDragging = false;
-
-                if (_hoveredCell.HasValue && _validator.IsValid(_hoveredCell.Value))
-                {
-                    var cell = _hoveredCell.Value;
-                    var entity = _factory.Spawn(_preview.CurrentArchetype, cell, _parent, CharacterRole.Defense);
-                    _repo.Add(entity, cell);
-
-                    _eventBus.Fire(new CharacterPlacedEvent(_preview.CurrentArchetype, entity.EntityId, cell));
-                    _preview.End();
-                    _eventBus.Fire(new PlacementModeChangedEvent(false));
-                }
-                else
-                {
-                    _preview.SnapBackToOrigin();
-                    _eventBus.Fire(new PlacementModeChangedEvent(false));
-                }
-            }
+            _events.Subscribe<CharacterSelectedEvent>(OnCharacterSelected);
+            _events.Subscribe<HoverCellChangedEvent>(e => { _hoverCell = e.Cell; _preview.UpdateTo(_hoverCell); });
         }
 
         private void OnCharacterSelected(CharacterSelectedEvent e)
         {
             _preview.Begin(e.Archetype);
+            _events.Fire(new PlacementModeChangedEvent(true));
+            _preview.UpdateTo(_hoverCell);
         }
 
-        private void OnHoverCellChanged(HoverCellChangedEvent e)
+        public void Tick()
         {
-            _hoveredCell = e.Cell;
+            if (_preview.IsActive && (Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(1)))
+                CancelPlacement();
+
+            if (_preview.IsActive && Input.GetMouseButtonDown(0))
+                TryPlace();
+        }
+
+        private void TryPlace()
+        {
+            if (!_hoverCell.HasValue) return;
+            var cell = _hoverCell.Value;
+            if (!_validator.IsValid(cell)) return;
+
+            _grid.TryOccupy(cell);
+            var archetype = _preview.CurrentArchetype;
+            var entity = _factory.Spawn(archetype, cell, _unitsParent, CharacterRole.Defense);
+            _repo.Add(entity, cell);
+
+            _events.Fire(new CharacterPlacedEvent(archetype, entity.EntityId, cell));
+            EndPlacement();
+        }
+
+        private void CancelPlacement() => EndPlacement();
+
+        private void EndPlacement()
+        {
+            _preview.End();
+            _events.Fire(new PlacementModeChangedEvent(false));
         }
     }
 }
