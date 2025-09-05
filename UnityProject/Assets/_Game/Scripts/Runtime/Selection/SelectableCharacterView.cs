@@ -52,9 +52,6 @@ namespace _Game.Runtime.Selection
 
             return hit;
         }
-
-
-
         public CharacterArchetype Archetype => _archetype;
     }
 }

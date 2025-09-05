@@ -1,46 +1,20 @@
-﻿// --- FILE: RuntimeInstaller.cs ---
-using UnityEngine;
-
-using _Game.Core;                        // GameContext
-using _Game.Core.DI;                     // BaseInstaller
-using _Game.Interfaces;                  // IDIContainer, ISystemRunner, IEventBus
-
-// Board / grid / input
-using _Game.Runtime.Board;               // BoardSurface, BoardGrid, GridProjector, ScreenSpaceRayProvider
-
-// Optional hover & visuals (safe to keep; highlight is optional)
-using _Game.Runtime.Systems;             // PointerHoverSystem
-using _Game.Runtime.Visuals;             // GridVisualsService
-
-// Characters
-using _Game.Runtime.Characters;          // CharacterPoolRegistry, CharacterFactory, CharacterRepository
-using _Game.Runtime.Core;                // CharacterSystem
-
-// Placement (preview + validator)
-using _Game.Runtime.Placement;           // PlacementValidator, PlacementPreviewService
-
-// Level data + selection
-using _Game.Runtime.Levels;              // LevelRuntimeConfig / LevelCatalogue
-using _Game.Runtime.Selection;           // CharacterSelectionSpawner, SelectableCharacterView
-
-// Pool util (for grid visuals)
-using _Game.Utils;                       // GameObjectPool
+﻿using UnityEngine;
+using _Game.Interfaces;       
+using _Game.Runtime.Board;    
+using _Game.Runtime.Systems;  
+using _Game.Runtime.Visuals;  
+using _Game.Runtime.Characters;
+using _Game.Runtime.Core;     
+using _Game.Runtime.Placement;
+using _Game.Runtime.Levels;   
+using _Game.Runtime.Selection;
+using _Game.Utils;            
 
 namespace _Game.Core.DI
 {
-    /// <summary>
-    /// Scene-level installer for NO-PHYSICS drag-and-place flow:
-    /// - Core services (grid, projector, ray provider)
-    /// - (Optional) Grid visuals
-    /// - Level runtime config
-    /// - Characters (pool/factory/repo/system)
-    /// - Selection spawner (3D models to drag)
-    /// - CharacterSelectionSystem (now rotation-proof via BoardSurface plane)
-    /// - (Optional) Event-driven preview/placement controller (if you wire it)
-    /// </summary>
+
     public sealed class RuntimeInstaller : BaseInstaller
     {
-        // --------- Scene references ---------
         [Header("Scene")]
         [SerializeField] private BoardSurface boardSurface;
         [SerializeField] private Camera       targetCamera;
@@ -48,28 +22,23 @@ namespace _Game.Core.DI
         [Header("Selection Models")]
         [SerializeField] private Transform characterSelectionSpawnPoint;
         [SerializeField, Min(0.1f)] private float characterSpacing = 2f;
-        [SerializeField] private Transform selectionParent;   // parent for spawned selection models
-        [SerializeField, Min(0.05f)] private float selectionPickRadius = 1.0f; // world-units pick radius
+        [SerializeField] private Transform selectionParent;
+        [SerializeField, Min(0.05f)] private float selectionPickRadius = 1.0f;
 
         [Header("Placed Units Parent")]
         [SerializeField] private Transform unitsParent;
 
-        // --------- Visuals (optional) ---------
         [Header("Grid Visuals (Optional)")]
-        [Tooltip("Static marker shown on every placeable cell.")]
         [SerializeField] private GameObject placeableCellPrefab;
-        [Tooltip("Single highlight that moves to hovered cell. (Requires PointerHoverSystem)")]
         [SerializeField] private GameObject hoverHighlightPrefab;
-        [SerializeField, Min(0f)] private float surfaceLift = 0.01f;
+        [SerializeField] private float surfaceLift = 0.01f;
         [SerializeField] private string visualsRootName = "GridVisuals";
         [SerializeField] private Transform visualsParent;
 
-        // --------- Level data ---------
         [Header("Level")]
         [SerializeField] private LevelCatalogue levelCatalogue;
         [SerializeField] private string levelId = "Level-1";
 
-        // ======================================================================
 
         public override void Install(IDIContainer container)
         {
@@ -94,7 +63,6 @@ namespace _Game.Core.DI
                 return;
             }
 
-            // ==== Core runtime services =====================================================
             var rayProvider = new ScreenSpaceRayProvider(targetCamera);
             container.BindSingleton<IRayProvider>(rayProvider);
 
@@ -106,14 +74,11 @@ namespace _Game.Core.DI
 
             container.BindSingleton(boardSurface);
 
-            // ==== Optional: pointer hover → events (for hover highlight visuals) ============
             if (hoverHighlightPrefab || placeableCellPrefab)
             {
                 var hoverSystem = new PointerHoverSystem(rayProvider, boardSurface, projector, events);
                 systems.Register((IUpdatableSystem)hoverSystem);
             }
-
-            // ==== Grid visuals (pooled) =====================================================
             if (placeableCellPrefab || hoverHighlightPrefab)
             {
                 Transform visualsRoot = visualsParent;
@@ -134,7 +99,7 @@ namespace _Game.Core.DI
                 GameObject hoverGO = null;
                 if (hoverHighlightPrefab)
                 {
-                    hoverGO = Object.Instantiate(hoverHighlightPrefab, visualsRoot, false);
+                    hoverGO = Instantiate(hoverHighlightPrefab, visualsRoot, false);
                     hoverGO.name = "HoverHighlight";
                     hoverGO.SetActive(false);
                 }
@@ -144,7 +109,6 @@ namespace _Game.Core.DI
                 container.BindSingleton(visualsSvc);
             }
 
-            // ==== Level runtime config ======================================================
             var levelData = levelCatalogue.GetById(levelId);
             if (levelData == null)
             {
@@ -154,7 +118,6 @@ namespace _Game.Core.DI
             var level = new LevelRuntimeConfig(levelData);
             container.BindSingleton(level);
 
-            // ==== Parents (units / selection) ==============================================
             if (!unitsParent)
             {
                 var up = new GameObject("Units").transform;
@@ -175,7 +138,6 @@ namespace _Game.Core.DI
                 selectionParent = sel;
             }
 
-            // ==== Characters stack ==========================================================
             var pools      = new CharacterPoolRegistry();
             var repo       = new CharacterRepository();
             var factory    = new CharacterFactory(pools);
@@ -188,40 +150,30 @@ namespace _Game.Core.DI
 
             systems.Register((IUpdatableSystem)charSystem);
 
-            // ==== Placement validator & optional preview ====================================
             var validator  = new PlacementValidator(repo, grid);
             container.BindSingleton(validator);
 
-            // (Optional) PlacementPreviewService for ghost visuals during event-driven placement
             var previewSvc = new PlacementPreviewService(factory, boardSurface, projector, validator, unitsParent);
             container.BindSingleton(previewSvc);
+            
 
-            // (Optional) Event-driven placement controller (works with UI + PointerHoverSystem)
-            // var placementCtrl = new PlacementControllerSystem(GameContext.Events, grid, factory, repo, validator, previewSvc, unitsParent);
-            // systems.Register((IUpdatableSystem)placementCtrl);
-
-            // ==== Spawn 3D selection models (no physics) ====================================
             var spawner     = new CharacterSelectionSpawner(level, characterSelectionSpawnPoint, characterSpacing, selectionParent);
             var selectables = spawner.Spawn(); // List<SelectableCharacterView>
 
-            // ==== Register NO-PHYSICS selection + placement system (robust plane) ===========
             var selectionSystem = new CharacterSelectionSystem(
                 rayProvider,
                 projector,
                 grid,
-                boardSurface,          // plane source
+                boardSurface,
                 factory,
                 repo,
                 validator,
                 unitsParent,
-                selectables,           // NOTE: List<SelectableCharacterView>
-                GameContext.Events,    // to receive HoverCellChangedEvent
-                dragLift: 0.01f        // tiny lift while dragging (optional)
+                selectables,
+                GameContext.Events,
+                dragLift: 0.01f 
             );
             systems.Register((IUpdatableSystem)selectionSystem);
-
-
-            Debug.Log("[RuntimeInstaller] Installed: no-physics selection + placement (rotation-proof), grid visuals, level + characters.");
         }
     }
 }

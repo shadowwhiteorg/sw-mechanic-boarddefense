@@ -1001,14 +1001,14 @@ MonoBehaviour:
   targetCamera: {fileID: 330585545}
   characterSelectionSpawnPoint: {fileID: 813389985}
   characterSpacing: 1.5
-  selectionParent: {fileID: 813389985}
+  selectionParent: {fileID: 0}
   selectionPickRadius: 0.1
-  unitsParent: {fileID: 813389985}
+  unitsParent: {fileID: 0}
   placeableCellPrefab: {fileID: 8821829033302031, guid: b8583918701f9bf4a96e726070c750b7, type: 3}
   hoverHighlightPrefab: {fileID: 1779702445056142288, guid: c937d26410730084e87b5423799ff5b6, type: 3}
-  surfaceLift: 1
+  surfaceLift: -1
   visualsRootName: GridVisuals
-  visualsParent: {fileID: 813389985}
+  visualsParent: {fileID: 0}
   levelCatalogue: {fileID: 11400000, guid: 5ab29ec2ee99ccd459ca385c70d478b7, type: 2}
   levelId: Level-1
 --- !u!4 &1990399436

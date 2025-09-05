@@ -52,7 +52,7 @@ namespace _Game.Runtime.Selection
             _placedParent = placedParent;
             _selectables  = selectables;
             _events       = events;
-            _dragLift     = Mathf.Max(0f, dragLift);
+            _dragLift     = Mathf.Max(0f, -dragLift);
 
             _events.Subscribe<HoverCellChangedEvent>(OnHoverCellChanged);
         }

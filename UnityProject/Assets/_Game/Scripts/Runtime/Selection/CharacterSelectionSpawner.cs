@@ -29,7 +29,6 @@ namespace _Game.Runtime.Selection
             {
                 if (archetype == null || archetype.viewPrefab == null)
                 {
-                    Debug.LogWarning("[CharacterSelectionSpawner] Missing archetype or viewPrefab; skipping.");
                     continue;
                 }
 
@@ -40,7 +39,6 @@ namespace _Game.Runtime.Selection
                 var view = go.GetComponent<SelectableCharacterView>();
                 if (view == null)
                 {
-                    Debug.LogWarning($"[CharacterSelectionSpawner] SelectableCharacterView missing on {go.name}; skipping.");
                     Object.Destroy(go);
                     continue;
                 }
