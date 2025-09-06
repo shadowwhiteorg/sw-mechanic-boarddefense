@@ -102,5 +102,5 @@ AssetOrigin:
   productId: 128097
   packageName: Battle Wizard Poly Art
   packageVersion: 1.2
-  assetPath: Assets/WizardPolyArt/Textures/ForPBRMaskTintShader/PolyArtMask.png
+  assetPath: Assets/_Game/Art/2D/Textures/PolyArtMask.png
   uploadId: 422634

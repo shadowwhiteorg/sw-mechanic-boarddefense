@@ -11,5 +11,5 @@ AssetOrigin:
   productId: 128097
   packageName: Battle Wizard Poly Art
   packageVersion: 1.2
-  assetPath: Assets/WizardPolyArt/Prefabs/PolyArtWizardMaskTintMat.prefab
+  assetPath: Assets/_Game/Prefabs/Gameplay/PolyArtWizardMaskTintMat.prefab
   uploadId: 422634

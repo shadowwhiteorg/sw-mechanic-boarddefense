@@ -11,5 +11,5 @@ AssetOrigin:
   productId: 128097
   packageName: Battle Wizard Poly Art
   packageVersion: 1.2
-  assetPath: Assets/WizardPolyArt/Prefabs/Staff03PolyArt.prefab
+  assetPath: Assets/_Game/Prefabs/Gameplay/Staff03PolyArt.prefab
   uploadId: 422634

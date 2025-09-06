@@ -11,5 +11,5 @@ AssetOrigin:
   productId: 128097
   packageName: Battle Wizard Poly Art
   packageVersion: 1.2
-  assetPath: Assets/WizardPolyArt/Materials/PolyArtMaskTint.mat
+  assetPath: Assets/_Game/Art/3D/Materials/PolyArtMaskTint.mat
   uploadId: 422634

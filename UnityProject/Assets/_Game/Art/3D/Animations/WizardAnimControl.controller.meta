@@ -11,5 +11,5 @@ AssetOrigin:
   productId: 128097
   packageName: Battle Wizard Poly Art
   packageVersion: 1.2
-  assetPath: Assets/WizardPolyArt/Animations/WizardAnimControl.controller
+  assetPath: Assets/_Game/Art/3D/Animations/WizardAnimControl.controller
   uploadId: 422634
