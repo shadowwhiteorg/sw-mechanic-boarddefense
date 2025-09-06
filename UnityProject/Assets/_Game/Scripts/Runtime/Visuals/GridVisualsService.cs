@@ -18,7 +18,7 @@ namespace _Game.Runtime.Visuals
 
         private readonly GameObjectPool _placeablePool;
         private readonly Transform _parent;
-        private readonly Vector3 _lift; // nudge above surface to prevent z-fighting
+        private readonly Vector3 _lift;
 
         private readonly Dictionary<Cell, GameObject> _markers = new();
 
@@ -35,17 +35,17 @@ namespace _Game.Runtime.Visuals
             Transform parent,
             float liftDistance = 0.01f)
         {
-            _grid         = grid;
-            _surface      = surface;
-            _projector    = projector;
-            _events       = events;
-            _placeablePool= placeablePool;
-            _parent       = parent;
-            _hoverGO      = hoverInstance;
-            _lift         = _surface.WorldPlaneNormal * liftDistance;
+            _grid          = grid;
+            _surface       = surface;
+            _projector     = projector;
+            _events        = events;
+            _placeablePool = placeablePool;
+            _parent        = parent;
+            _hoverGO       = hoverInstance;
+            _lift          = _surface.WorldPlaneNormal * liftDistance;
 
-            _hoverGO.SetActive(false);
-            BuildAllPlaceableMarkers();
+            if (_hoverGO) _hoverGO.SetActive(false);
+            if (_placeablePool != null) BuildAllPlaceableMarkers();
 
             _events.Subscribe<HoverCellChangedEvent>(OnHoverChanged);
         }
@@ -72,6 +72,8 @@ namespace _Game.Runtime.Visuals
 
         private void OnHoverChanged(HoverCellChangedEvent e)
         {
+            if (_hoverGO == null) return;
+
             if (!e.Cell.HasValue)
             {
                 _hoverGO.SetActive(false);
@@ -85,26 +87,17 @@ namespace _Game.Runtime.Visuals
                 return;
             }
 
-            var p = _projector.CellToWorldCenter(cell) + _lift;
-            if (!_hoverGO.activeSelf) _hoverGO.SetActive(true);
-            _hoverGO.transform.position = p;
+            var pos = _projector.CellToWorldCenter(cell) + _lift * 2f;
+            _hoverGO.transform.position = pos;
+            _hoverGO.transform.rotation = Quaternion.LookRotation(Vector3.forward, _surface.WorldPlaneNormal);
+            _hoverGO.SetActive(true);
         }
 
         public void Dispose()
         {
             if (_disposed) return;
+            _events?.Unsubscribe<HoverCellChangedEvent>(OnHoverChanged);
             _disposed = true;
-            _events.Unsubscribe<HoverCellChangedEvent>(OnHoverChanged);
-
-            // Return markers to pool
-            foreach (var kv in _markers)
-            {
-                var go = kv.Value;
-                if (go != null) _placeablePool.Return(go);
-            }
-            _markers.Clear();
-
-            if (_hoverGO != null) _hoverGO.SetActive(false);
         }
     }
 }

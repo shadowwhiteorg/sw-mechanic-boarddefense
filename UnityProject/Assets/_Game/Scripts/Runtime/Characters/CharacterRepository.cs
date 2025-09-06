@@ -13,6 +13,11 @@ namespace _Game.Runtime.Characters
             e = null;
             return _byCell.TryGetValue(cell, out var id) && _byId.TryGetValue(id, out e);
         }
+        
+        public bool TryGetById(int id, out CharacterEntity e)
+        {
+            return _byId.TryGetValue(id, out e);
+        }
 
         public bool IsOccupied(Cell c) => _byCell.ContainsKey(c);
 
@@ -27,6 +32,14 @@ namespace _Game.Runtime.Characters
             _byId.Remove(e.EntityId);
             if (_byCell.TryGetValue(e.Cell, out var id) && id == e.EntityId)
                 _byCell.Remove(e.Cell);
+        }
+        
+        public void Move(CharacterEntity e, Cell from, Cell to)
+        {
+            if (_byCell.TryGetValue(from, out var id) && id == e.EntityId)
+                _byCell.Remove(from);
+            _byCell[to] = e.EntityId;
+            _byId[e.EntityId] = e; // keep id->entity fresh
         }
     }
 }

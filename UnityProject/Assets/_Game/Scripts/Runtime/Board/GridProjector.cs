@@ -3,10 +3,6 @@ using _Game.Runtime.Core;
 
 namespace _Game.Runtime.Board
 {
-    /// <summary>
-    /// Projects pointer world positions onto the board, converts to cells (and back).
-    /// Assumes BoardGrid is constructed with the same rows/cols/cellSize as BoardSurface.
-    /// </summary>
     public sealed class GridProjector
     {
         private readonly BoardGrid _grid;
@@ -19,7 +15,6 @@ namespace _Game.Runtime.Board
 
         public bool TryWorldToCell(Vector3 world, out Cell cell)
         {
-            // Convert world → local, then offset by localOrigin, then to cell.
             var local = _surface.WorldToLocal(world) - _surface.localOrigin;
             return _grid.TryLocalToCell(local, out cell);
         }

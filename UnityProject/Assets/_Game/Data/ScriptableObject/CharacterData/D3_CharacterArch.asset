@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dd91a88519c481680c6801e09c2571c, type: 3}
+  m_Name: D3_CharacterArch
+  m_EditorClassIdentifier: Assembly-CSharp::_Game.Runtime.Characters.Config.CharacterArchetype
+  id: DefC
+  displayName: Defence C
+  icon: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
+  isEnemy: 0
+  viewPrefab: {fileID: 6183439039938654832, guid: cc673ab684df186468bd4e599331f922, type: 3}
+  baseHealth: 10
+  moveSpeed: 0
+  attackRangeBlocks: 1
+  attackDirection: 1
+  weapon: {fileID: 11400000, guid: 9245d620268255749b3e9064b00fdd4a, type: 2}

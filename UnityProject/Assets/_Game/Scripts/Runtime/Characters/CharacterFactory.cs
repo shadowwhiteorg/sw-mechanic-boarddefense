@@ -1,91 +1,148 @@
-﻿using UnityEngine;
+﻿// Assets/_Game/Scripts/Runtime/Characters/CharacterFactory.cs
+using UnityEngine;
+using _Game.Core;                         // GameContext
 using _Game.Enums;
-using _Game.Interfaces;
-using _Game.Runtime.Board;
-using _Game.Runtime.Characters.Config;
-using _Game.Runtime.Characters.Plugins;
-using _Game.Runtime.Characters.View;
-using _Game.Runtime.Core;
+using _Game.Interfaces; // CharacterRole
+using _Game.Runtime.Board;                // BoardGrid, BoardSurface, GridProjector
+using _Game.Runtime.Characters.Config;    // CharacterArchetype
+using _Game.Runtime.Characters.Plugins;   // HealthPlugin, WeaponPlugin, RangedAttackPlugin, MovementPlugin
+using _Game.Runtime.Characters.View;      // CharacterView, ICharacterView
+using _Game.Runtime.Combat;               // WeaponConfig
+using _Game.Runtime.Core;                 // Cell
+using _Game.Utils;                        // GameObjectPool
 
 namespace _Game.Runtime.Characters
 {
+    /// Spawns characters, composes their plugins, registers them for ticking,
+    /// and keeps the repository mapping accurate at spawn time.
     public sealed class CharacterFactory
     {
-        private int _nextId = 1;
         private readonly CharacterPoolRegistry _pools;
+        private int _nextEntityId = 1;
 
         public CharacterFactory(CharacterPoolRegistry pools)
         {
             _pools = pools;
         }
+
         public CharacterEntity Spawn(CharacterArchetype archetype, Cell cell, Transform parent, CharacterRole role)
         {
-            return InternalCreate(archetype, role, parent);
-        }
-        
-        public CharacterEntity SpawnAtWorld(
-            CharacterArchetype archetype,
-            Vector3 worldPosition,
-            Cell cell,
-            Transform parent,
-            CharacterRole role)
-        {
-            var entity = InternalCreate(archetype, role, parent);
+            // Create / fetch a pooled view root.
+            Transform root = GetOrCreateUnitRoot(archetype, parent);
 
-            var root = entity.View.Root;
-            root.SetParent(parent, worldPositionStays: true);
-            root.position = worldPosition;
+            // Ensure a concrete view exists.
+            var view =
+                root.GetComponent<ICharacterView>() ??
+                (root.GetComponent<CharacterView>() ?? root.gameObject.AddComponent<CharacterView>());
 
-            entity.Cell = cell;
-
-            return entity;
-        }
-
-        private CharacterEntity InternalCreate(CharacterArchetype archetype, CharacterRole role, Transform parent)
-        {
-            GameObject go;
-            if (archetype.viewPrefab != null)
-            {
-                go = Object.Instantiate(archetype.viewPrefab, parent, worldPositionStays: true);
-            }
-            else
-            {
-                go = new GameObject("CharacterView");
-                go.transform.SetParent(parent, worldPositionStays: true);
-            }
-
-            var view = go.GetComponent<ICharacterView>();
-            if (view == null)
-                view = go.AddComponent<CharacterView>();
-
-            var id = _nextId++;
+            var id = _nextEntityId++;
             var entity = new CharacterEntity(id, archetype, view)
             {
+                Cell = cell,
                 Role = role
             };
 
-            view.Bind(entity);
-            view.Show();
+            // Attach gameplay plugins.
+            AttachPlugins(entity);
 
-            AttachDefaultPlugins(entity);
+            // Add to repository & register to character system for ticking.
+            var repo = GameContext.Container.Resolve<CharacterRepository>();
+            repo.Add(entity, cell);
+
+            var charSystem = GameContext.Container.Resolve<CharacterSystem>();
+            charSystem.Register(entity);
 
             return entity;
         }
 
-        private static void AttachDefaultPlugins(CharacterEntity e)
+        public CharacterEntity SpawnAtWorld(CharacterArchetype archetype, Vector3 worldPosition, Cell cell, Transform parent, CharacterRole role)
         {
-            // Example default wiring; align with your actual plugin policy
-            // TODO: Add plugins
-            
-            // e.AddPlugin(new HealthPlugin(e, max: e.Archetype.baseHealth));
-            // if (e.Role == CharacterRole.Defense)
-            // {
-            //     e.AddPlugin(new MeleeAttackPlugin( e.Archetype.attackRate,e.Archetype.attackDamage));
-            // }
-            // else if (e.Role == CharacterRole.Enemy)
-            // {
-            //     e.AddPlugin(new MovementPlugin(e, e.Archetype.moveSpeed));
-            // }
+            var e = Spawn(archetype, cell, parent, role);
+            var root = e.View?.Root;
+            if (parent && root && root.parent != parent)
+                root.SetParent(parent, true);
+            if (root) root.position = worldPosition;
+            return e;
+        }
+
+        private void AttachPlugins(CharacterEntity e)
+        {
+            // Every unit has health.
+            e.AddPlugin(new HealthPlugin(e.Archetype.baseHealth));
+
+            if (e.Role == CharacterRole.Defense)
+            {
+                // Defense = cadence (Weapon) + targeting (Ranged).
+                var events   = GameContext.Events;
+                var grid     = GameContext.Container.Resolve<BoardGrid>();
+                var repo     = GameContext.Container.Resolve<CharacterRepository>();
+
+                WeaponConfig wcfg = e.Archetype.weapon;
+
+                var weapon = new WeaponPlugin(
+                    events,
+                    grid,
+                    e.Archetype.attackDirection,
+                    e.Archetype.attackRangeBlocks,
+                    wcfg
+                );
+
+                var ranged = new RangedAttackPlugin(
+                    repo,
+                    grid,
+                    e.Archetype.attackDirection,
+                    e.Archetype.attackRangeBlocks
+                );
+
+                ranged.BindWeapon(weapon);
+
+                e.AddPlugin(weapon);
+                e.AddPlugin(ranged);
+            }
+            else // Enemy
+            {
+                var grid      = GameContext.Container.Resolve<BoardGrid>();
+                var surface   = GameContext.Container.Resolve<BoardSurface>();
+                var projector = GameContext.Container.Resolve<GridProjector>();
+                var repo      = GameContext.Container.Resolve<CharacterRepository>();
+
+                if (e.Archetype.moveSpeed > 0f)
+                {
+                    e.AddPlugin(new MovementPlugin(
+                        grid,
+                        surface,
+                        projector,
+                        e.Archetype.moveSpeed,
+                        repo
+                    ));
+                }
+            }
+        }
+
+        private Transform GetOrCreateUnitRoot(CharacterArchetype archetype, Transform parent)
+        {
+            // Prefer pooled creation when registry is present.
+            if (_pools != null)
+            {
+                var unitPool = _pools.GetUnitPool(archetype, () =>
+                {
+                    var prefab = archetype.viewPrefab != null
+                        ? archetype.viewPrefab
+                        : new GameObject("CharacterView");
+                    return new GameObjectPool(prefab, initialSize: 8, parent: parent);
+                });
+
+                var go = unitPool.Get();
+                if (parent && go.transform.parent != parent)
+                    go.transform.SetParent(parent, false);
+                return go.transform;
+            }
+
+            // Fallback: direct instantiate.
+            var instance = archetype.viewPrefab
+                ? Object.Instantiate(archetype.viewPrefab, parent, false)
+                : new GameObject("CharacterView");
+            return instance.transform;
         }
     }
 }
