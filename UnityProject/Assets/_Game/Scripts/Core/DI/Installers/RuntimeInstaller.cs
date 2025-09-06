@@ -19,7 +19,7 @@ using _Game.Runtime.Selection;           // CharacterSelectionSpawner, Character
 using _Game.Runtime.Levels;              // LevelCatalogue, LevelRuntimeConfig
 
 // Combat
-using _Game.Runtime.Combat;              // ProjectileSystem, BaseHealthSystem, CharacterLifetimeSystem
+using _Game.Runtime.Combat;              // ProjectileSystem, BaseHealthSystem, CharacterLifetimeSystem, GameStateSystem
 using _Game.Runtime.Core;                // EnemySpawnerSystem
 
 // Visuals
@@ -33,7 +33,7 @@ namespace _Game.Core.DI
 {
     /// <summary>
     /// Scene-level wiring for board/grid, characters, projectiles, enemy spawns,
-    /// defense selection/placement, and grid visuals (prefab-driven).
+    /// defense selection/placement, grid visuals, and simple WIN/LOSE logs.
     /// </summary>
     public sealed class RuntimeInstaller : BaseInstaller
     {
@@ -88,14 +88,11 @@ namespace _Game.Core.DI
             container.BindSingleton(projector);
 
             // ==== Grid visuals (prefab-driven) ====
-            // Register hover system (safe to run even if no visuals are set)
             var hoverSystem = new PointerHoverSystem(rayProvider, boardSurface, projector, events);
             systems.Register((IUpdatableSystem)hoverSystem);
 
-            // If user assigned either prefab, build visuals service from them
             if (placeableCellPrefab || hoverHighlightPrefab)
             {
-                // Visuals root
                 Transform visualsRoot = visualsParent;
                 if (!visualsRoot)
                 {
@@ -104,16 +101,13 @@ namespace _Game.Core.DI
                     visualsRoot = go.transform;
                 }
 
-                // Pool for placeable markers (optional, only if prefab provided)
                 GameObjectPool placeablePool = null;
                 if (placeableCellPrefab)
                 {
-                    // Roughly half the board is “placeable” (bottom half)
                     int approxPlaceable = Mathf.CeilToInt(grid.Size.Rows * grid.Size.Cols * 0.5f);
                     placeablePool = new GameObjectPool(placeableCellPrefab, initialSize: approxPlaceable, parent: visualsRoot);
                 }
 
-                // Hover highlight instance (optional)
                 GameObject hoverGO = null;
                 if (hoverHighlightPrefab)
                 {
@@ -122,7 +116,6 @@ namespace _Game.Core.DI
                     hoverGO.SetActive(false);
                 }
 
-                // Build the visuals service (prefab-driven)
                 var visualsSvc = new GridVisualsService(
                     grid, boardSurface, projector, events,
                     placeablePool, hoverGO, visualsRoot, surfaceLift);
@@ -170,13 +163,17 @@ namespace _Game.Core.DI
             container.BindSingleton(charSystem);
             systems.Register((IUpdatableSystem)charSystem);
 
-            // >>> NEW: Character lifetime & base HP <<<
-            var lifetime = new CharacterLifetimeSystem(repo, events);
+            // ==== Lifetime + Base HP + Win/Lose ====
+            var lifetime   = new CharacterLifetimeSystem(repo, events);
             systems.Register((IUpdatableSystem)lifetime);
 
-            var baseHealth = new BaseHealthSystem(events, repo, maxHp: 10);
-            container.BindSingleton(baseHealth); // useful if UI needs to read CurrentHp
+            var baseHealth = new BaseHealthSystem(events, repo, maxHp: 1);
+            container.BindSingleton(baseHealth);
             systems.Register((IUpdatableSystem)baseHealth);
+
+            var gameState  = new GameStateSystem(events, repo, level, baseHealth);
+            container.BindSingleton(gameState);
+            systems.Register((IUpdatableSystem)gameState);
 
             // ==== Projectile pool + system ====
             if (projectilePrefab == null)

@@ -38,10 +38,8 @@ namespace _Game.Runtime.Characters.Plugins
         public int  RangeBlocks => _rangeBlocks;
         public AttackDirection Direction => _direction;
 
-        /// Order the weapon to fire at a specific target (already acquired by another plugin).
         public bool TryFireAt(CharacterEntity target)
         {
-            Debug.Log("I break your heat");
             if (_self == null || target == null || !IsReady) return false;
 
             // Validate simple range (Manhattan) before firing.
@@ -49,7 +47,6 @@ namespace _Game.Runtime.Characters.Plugins
             int md = Mathf.Abs(s.Row - t.Row) + Mathf.Abs(s.Col - t.Col);
             if (md > _rangeBlocks) return false;
 
-            // Use Projectile SO as single source of damage/flight.
             var proj = _cfg.projectileConfig;
             int damage       = proj ? proj.damage : 1;
             float speed      = proj ? proj.speed  : 8f;
