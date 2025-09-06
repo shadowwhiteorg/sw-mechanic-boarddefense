@@ -8,9 +8,9 @@ namespace _Game.Runtime.Selection
     {
         [Header("Optional: override auto-detection")] [SerializeField]
         private Renderer[] renderers;
-
         private CharacterArchetype _archetype;
         private Vector3 _initialPosition;
+        public CharacterArchetype Archetype => _archetype;
 
         public void Initialize(CharacterArchetype archetype)
         {
@@ -52,6 +52,5 @@ namespace _Game.Runtime.Selection
 
             return hit;
         }
-        public CharacterArchetype Archetype => _archetype;
     }
 }

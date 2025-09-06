@@ -10,7 +10,10 @@ using _Game.Runtime.Core;
 
 namespace _Game.Runtime.Combat
 {
-    /// Spawns enemies per LevelRuntimeConfig.Waves.
+    /// <summary>
+    /// Spawns enemies using LevelRuntimeConfig.Waves.
+    /// Each enemy starts at TOP row in a RANDOM column and gets lane movement via the factory.
+    /// </summary>
     public sealed class EnemySpawnerSystem : IUpdatableSystem
     {
         private readonly BoardGrid _grid;
@@ -19,22 +22,34 @@ namespace _Game.Runtime.Combat
         private readonly CharacterRepository _repo;
         private readonly LevelRuntimeConfig _level;
         private readonly Transform _unitsParent;
-        private readonly List<IEnumerator> _co = new();
 
-        public EnemySpawnerSystem(BoardGrid grid, GridProjector projector, CharacterFactory factory,
-                                  CharacterRepository repo, LevelRuntimeConfig level, Transform unitsParent)
+        private readonly List<IEnumerator> _running = new();
+
+        public EnemySpawnerSystem(
+            BoardGrid grid,
+            GridProjector projector,
+            CharacterFactory factory,
+            CharacterRepository repo,
+            LevelRuntimeConfig level,
+            Transform unitsParent)
         {
-            _grid = grid; _projector = projector; _factory = factory; _repo = repo; _level = level; _unitsParent = unitsParent;
+            _grid = grid;
+            _projector = projector;
+            _factory = factory;
+            _repo = repo;
+            _level = level;
+            _unitsParent = unitsParent;
 
-            // Start a coroutine per wave
+            // Start a small coroutine per wave
             foreach (var w in _level.Waves)
-                _co.Add(RunWave(w));
+                _running.Add(RunWave(w));
         }
 
         public void Tick()
         {
-            for (int i = _co.Count - 1; i >= 0; i--)
-                if (!_co[i].MoveNext()) _co.RemoveAt(i);
+            for (int i = _running.Count - 1; i >= 0; i--)
+                if (!_running[i].MoveNext())
+                    _running.RemoveAt(i);
         }
 
         private IEnumerator RunWave(EnemyWave wave)
@@ -58,15 +73,24 @@ namespace _Game.Runtime.Combat
             }
         }
 
-        private void SpawnOne(_Game.Runtime.Characters.Config.CharacterArchetype a)
+        private void SpawnOne(_Game.Runtime.Characters.Config.CharacterArchetype archetype)
         {
             int topRow = _grid.Size.Rows - 1;
             int col = Random.Range(0, _grid.Size.Cols);
-            var entry = new Cell(topRow, col);
-            var world = _projector.CellToWorldCenter(entry);
+            var cell = new Cell(topRow, col);
 
-            var e = _factory.SpawnAtWorld(a, world, entry, _unitsParent, CharacterRole.Enemy);
-            _repo.Add(e, entry); // track occupancy if you use it
+            var world = _projector.CellToWorldCenter(cell);
+
+            var e = _factory.SpawnAtWorld(
+                archetype,
+                world,
+                cell,
+                _unitsParent,
+                CharacterRole.Enemy
+            );
+
+            // Track in repository for occupancy/targeting
+            _repo.Add(e, cell);
         }
     }
 }

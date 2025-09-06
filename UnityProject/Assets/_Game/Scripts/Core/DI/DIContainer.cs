@@ -10,10 +10,8 @@ namespace _Game.Core.DI
         private readonly Dictionary<Type, object> _singletons = new();
         private readonly Dictionary<Type, Type> _transients = new();
 
-        /// <summary>Bind a pre-constructed singleton instance.</summary>
         public void BindSingleton<T>(T instance) => _singletons[typeof(T)] = instance;
 
-        /// <summary>Bind an interface to a concrete implementation as transient (new instance on each resolve).</summary>
         public void Bind<TInterface, TImplementation>() where TImplementation : TInterface
             => _transients[typeof(TInterface)] = typeof(TImplementation);
 
@@ -27,7 +25,6 @@ namespace _Game.Core.DI
             if (_transients.TryGetValue(type, out var implType))
                 return CreateWithInjection(implType, resolving);
 
-            // If a concrete type is requested and not registered, attempt to construct it directly.
             if (!type.IsAbstract && !type.IsInterface)
                 return CreateWithInjection(type, resolving);
 
@@ -41,7 +38,6 @@ namespace _Game.Core.DI
 
             try
             {
-                // Pick the constructor with the most parameters.
                 var ctors = implType.GetConstructors();
                 if (ctors.Length == 0)
                     return Activator.CreateInstance(implType);

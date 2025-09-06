@@ -13,6 +13,11 @@ namespace _Game.Runtime.Characters
             e = null;
             return _byCell.TryGetValue(cell, out var id) && _byId.TryGetValue(id, out e);
         }
+        
+        public bool TryGetById(int id, out CharacterEntity e)
+        {
+            return _byId.TryGetValue(id, out e);
+        }
 
         public bool IsOccupied(Cell c) => _byCell.ContainsKey(c);
 

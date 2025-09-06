@@ -999,18 +999,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_Game.Core.DI.RuntimeInstaller
   boardSurface: {fileID: 1294311165}
   targetCamera: {fileID: 330585545}
-  characterSelectionSpawnPoint: {fileID: 813389985}
-  characterSpacing: 1.5
-  selectionParent: {fileID: 0}
-  selectionPickRadius: 0.1
-  unitsParent: {fileID: 0}
+  unitsParent: {fileID: 813389985}
+  projectilesParent: {fileID: 813389985}
   placeableCellPrefab: {fileID: 8821829033302031, guid: b8583918701f9bf4a96e726070c750b7, type: 3}
   hoverHighlightPrefab: {fileID: 1779702445056142288, guid: c937d26410730084e87b5423799ff5b6, type: 3}
-  surfaceLift: -1
+  surfaceLift: 0.01
   visualsRootName: GridVisuals
-  visualsParent: {fileID: 0}
+  visualsParent: {fileID: 813389985}
   levelCatalogue: {fileID: 11400000, guid: 5ab29ec2ee99ccd459ca385c70d478b7, type: 2}
   levelId: Level-1
+  projectilePrefab: {fileID: 1868454030377647705, guid: 4c959ed348c6e6d40b3fcefadac7e0fc, type: 3}
+  selectionModelsParent: {fileID: 813389985}
+  selectionSpawnPoint: {fileID: 813389985}
+  selectionSpacing: 2
+  selectionPickRadius: 0.1
 --- !u!4 &1990399436
 Transform:
   m_ObjectHideFlags: 0

@@ -1,29 +1,39 @@
-﻿using _Game.Enums;
+﻿using UnityEngine;
+using _Game.Enums;
 using _Game.Interfaces;
-using UnityEngine;
-using _Game.Runtime.Combat;
+using _Game.Runtime.Board;
+using _Game.Runtime.Characters;
+using _Game.Runtime.Core;
 
 namespace _Game.Runtime.Characters.Plugins
 {
+    /// <summary>
+    /// Defenses fire straight UP their current column (toward higher row indices),
+    /// hitting the FIRST enemy found within range. No projectiles required.
+    /// Cooldown is driven by attackRate (attacks/sec); damage uses attackDamage (int).
+    /// </summary>
     public sealed class RangedAttackPlugin : IAttack
     {
-        private readonly TargetingService _targets;
-        private readonly float _ratePerSec;
-        private readonly int _damage;
-        private readonly int _rangeBlocks;
-        private readonly AttackDirection _direction;
+        private readonly CharacterRepository _repo;
+        private readonly BoardGrid _grid;
+        private readonly float _rate;        // attacks/sec
+        private readonly int _damage;        // damage per shot
+        private readonly int _maxRangeCells; // how many rows to scan upward
 
         private CharacterEntity _self;
         private float _cooldown;
 
-        public RangedAttackPlugin(
-            TargetingService targets, float ratePerSec, int damage, int rangeBlocks, AttackDirection direction)
+        public RangedAttackPlugin(CharacterRepository repo,
+                                  BoardGrid grid,
+                                  float rate,
+                                  int damage,
+                                  int maxRangeCells = int.MaxValue)
         {
-            _targets = targets;
-            _ratePerSec = Mathf.Max(0.05f, ratePerSec);
+            _repo = repo;
+            _grid = grid;
+            _rate = Mathf.Max(0.05f, rate);
             _damage = Mathf.Max(1, damage);
-            _rangeBlocks = Mathf.Max(0, rangeBlocks);
-            _direction = direction;
+            _maxRangeCells = maxRangeCells < 1 ? int.MaxValue : maxRangeCells;
         }
 
         public void OnSpawn(CharacterEntity e)
@@ -44,34 +54,47 @@ namespace _Game.Runtime.Characters.Plugins
             _cooldown -= dt;
             if (_cooldown > 0f) return;
 
-            // Acquire target
-            if (TryAcquire(out var t) && TryGetHealth(t, out var hp))
+            var target = AcquireTargetUpColumn();
+            if (target != null)
             {
-                hp.ApplyDamage(_damage);
-                _cooldown = 1f / _ratePerSec;
+                DealDamage(target, _damage);
+                _cooldown = 1f / _rate;
             }
             else
             {
-                // no target; small retry delay
-                _cooldown = 0.1f;
+                // No target; try again next frame (don’t reset cooldown fully).
+                _cooldown = 0.05f;
             }
         }
 
-        private bool TryAcquire(out CharacterEntity target)
+        /// <summary>Find the nearest ENEMY in the same column, above us (row+).</summary>
+        private CharacterEntity AcquireTargetUpColumn()
         {
-            if (_direction == AttackDirection.Forward)
-                return _targets.TryFindForwardEnemy(_self, _rangeBlocks, out target);
+            var c = _self.Cell; // our current grid cell
+            // enemies spawn at the top row (larger row index) and march down toward row 0.
+            int maxRow = _grid.Size.Rows - 1;
+            int steps = 0;
 
-            return _targets.TryFindOmniEnemy(_self, _rangeBlocks, out target);
-        }
-
-        private static bool TryGetHealth(CharacterEntity e, out IHealth hp)
-        {
-            for (int i = 0; i < e.Plugins.Count; i++)
+            for (int r = c.Row + 1; r <= maxRow && steps < _maxRangeCells; r++, steps++)
             {
-                if (e.Plugins[i] is IHealth h) { hp = h; return true; }
+                var probe = new Cell(r, c.Col);
+                if (_repo.TryGetByCell(probe, out var candidate) && candidate.Role == CharacterRole.Enemy)
+                    return candidate;
             }
-            hp = null; return false;
+            return null;
+        }
+
+        private static void DealDamage(CharacterEntity target, int amount)
+        {
+            // Find an IHealth plugin on the target and apply damage.
+            IHealth hp = null;
+            var plugins = target.Plugins; // IReadOnlyList<ICharacterPlugin>
+            for (int i = 0; i < plugins.Count; i++)
+            {
+                if (plugins[i] is IHealth h) { hp = h; break; }
+            }
+            hp?.ApplyDamage(amount);
+            Debug.Log($"Ops I did it again! {target.EntityId}");
         }
     }
 }

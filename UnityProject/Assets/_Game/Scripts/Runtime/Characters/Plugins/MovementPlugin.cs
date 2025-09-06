@@ -1,14 +1,15 @@
-﻿using _Game.Interfaces;
+﻿using UnityEngine;
+using _Game.Interfaces;
 using _Game.Runtime.Board;
+using _Game.Runtime.Characters;
 using _Game.Runtime.Core;
-using UnityEngine;
 
 namespace _Game.Runtime.Characters.Plugins
 {
     /// <summary>
-    /// COLUMN-BASED movement (no waypoint array).
-    /// Enemies spawn at the TOP row and march straight DOWN their current column.
-    /// Speed is in blocks/sec (uses BoardGrid.CellSize as block length).
+    /// COLUMN-BASED movement with no waypoints.
+    /// Enemies spawn on the TOP row and march straight DOWN their current column.
+    /// Speed is in blocks/second (uses BoardGrid.CellSize as the size of one "block").
     /// </summary>
     public sealed class MovementPlugin : IMovement
     {
@@ -20,8 +21,8 @@ namespace _Game.Runtime.Characters.Plugins
         private CharacterEntity _e;
         private Vector3 _fromWorld;
         private Vector3 _toWorld;
-        private float _t;           // 0..1 progress along segment
-        private float _segmentTime; // secs to traverse one cell at speed
+        private float _t;           // 0..1 progress along the current cell-to-cell segment
+        private float _segmentTime; // seconds to traverse one grid cell at current speed
 
         public MovementPlugin(BoardGrid grid, BoardSurface surface, GridProjector projector, float blocksPerSecond)
         {
@@ -34,7 +35,7 @@ namespace _Game.Runtime.Characters.Plugins
         public void OnSpawn(CharacterEntity e)
         {
             _e = e;
-            // Snap to current cell center, then prepare first segment downwards.
+            // Snap to the current cell center, then prepare the first step.
             var c = _e.Cell;
             _e.View.Root.position = _projector.CellToWorldCenter(c);
             PrepareNextSegment();
@@ -60,12 +61,12 @@ namespace _Game.Runtime.Characters.Plugins
                 return;
             }
 
-            // Arrived at next cell center
+            // Arrived at next cell center.
             _e.View.Root.position = _toWorld;
 
-            // Update to the next row (downwards toward base)
+            // Move logical cell down by one row (toward the base).
             var c = _e.Cell;
-            var nextRow = c.Row - 1; // moving toward row 0
+            int nextRow = c.Row - 1;
             if (nextRow < 0)
             {
                 OnReachedBase();
@@ -81,7 +82,7 @@ namespace _Game.Runtime.Characters.Plugins
             var c = _e.Cell;
             _fromWorld = _e.View.Root.position;
 
-            var nextRow = c.Row - 1;
+            int nextRow = c.Row - 1;
             if (nextRow < 0)
             {
                 _toWorld = _fromWorld;
@@ -92,16 +93,17 @@ namespace _Game.Runtime.Characters.Plugins
 
             _toWorld = _projector.CellToWorldCenter(new Cell(nextRow, c.Col));
 
-            // distance≈one cell; compute time from blocks/sec (use grid cell size as block length)
-            var dist = Vector3.Distance(_fromWorld, _toWorld);
-            var blocks = Mathf.Max(0.0001f, dist / _grid.CellSize);
+            // Distance between cell centers is ~one cell; compute time from blocks/sec.
+            float dist = Vector3.Distance(_fromWorld, _toWorld);
+            float blocks = Mathf.Max(0.0001f, dist / _grid.CellSize);
             _segmentTime = blocks / _blocksPerSecond;
             _t = 0f;
         }
 
         private void OnReachedBase()
         {
-            // TODO: fire BaseDamagedEvent + proper despawn pipeline if you have one.
+            // TODO: Fire a BaseDamagedEvent (preferred) then despawn via lifetime system.
+            // Minimal fallback: destroy the view so it disappears.
             if (_e?.View?.Root)
                 Object.Destroy(_e.View.Root.gameObject);
         }
