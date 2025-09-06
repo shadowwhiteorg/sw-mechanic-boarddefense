@@ -18,8 +18,7 @@ MonoBehaviour:
   isEnemy: 1
   viewPrefab: {fileID: 2880904923944496387, guid: c69f114adbfabbd43ab078fb88bbb64f, type: 3}
   baseHealth: 5
-  attackDamage: 0
-  attackRate: 0.3
   moveSpeed: 0.5
   attackRangeBlocks: 4
   attackDirection: 0
+  weapon: {fileID: 11400000, guid: 9245d620268255749b3e9064b00fdd4a, type: 2}

@@ -10,16 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0dd91a88519c481680c6801e09c2571c, type: 3}
-  m_Name: E2_CharacterArch
+  m_Name: D1_CharacterArch
   m_EditorClassIdentifier: Assembly-CSharp::_Game.Runtime.Characters.Config.CharacterArchetype
-  id: EA
-  displayName: Enemy A
+  id: DefA
+  displayName: Defence A
   icon: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
-  isEnemy: 1
-  viewPrefab: {fileID: 5846168819169611327, guid: a851d629ba3e7b74cba0d8aedf237973, type: 3}
+  isEnemy: 0
+  viewPrefab: {fileID: 6905489635781892464, guid: 08ac1f26a8b3f0c43b8a7566404445a1, type: 3}
   baseHealth: 10
-  attackDamage: 0
-  attackRate: 0.3
-  moveSpeed: 0.25
+  moveSpeed: 0
   attackRangeBlocks: 4
   attackDirection: 0
+  weapon: {fileID: 11400000, guid: 9245d620268255749b3e9064b00fdd4a, type: 2}

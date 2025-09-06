@@ -19,8 +19,8 @@ using _Game.Runtime.Selection;           // CharacterSelectionSpawner, Character
 using _Game.Runtime.Levels;              // LevelCatalogue, LevelRuntimeConfig
 
 // Combat
-using _Game.Runtime.Combat;
-using _Game.Runtime.Core;                // EnemySpawnerSystem, ProjectileSystem
+using _Game.Runtime.Combat;              // ProjectileSystem, BaseHealthSystem, CharacterLifetimeSystem
+using _Game.Runtime.Core;                // EnemySpawnerSystem
 
 // Visuals
 using _Game.Runtime.Systems;             // PointerHoverSystem
@@ -133,7 +133,7 @@ namespace _Game.Core.DI
             var levelData = levelCatalogue.GetById(levelId);
             if (levelData == null) { Debug.LogError($"[RuntimeInstaller] Level '{levelId}' not found in LevelCatalogue."); return; }
             var level = new LevelRuntimeConfig(levelData);
-            container.BindSingleton(level); 
+            container.BindSingleton(level);
 
             // ==== Parents ====
             if (!unitsParent)
@@ -156,7 +156,7 @@ namespace _Game.Core.DI
                 selectionSpawnPoint = new GameObject("SelectionSpawnPoint").transform;
                 selectionSpawnPoint.SetParent(boardSurface.transform, true);
                 selectionSpawnPoint.position = boardSurface.transform.position;
-            }  
+            }
 
             // ==== Characters stack ====
             var pools      = new CharacterPoolRegistry();
@@ -170,6 +170,14 @@ namespace _Game.Core.DI
             container.BindSingleton(charSystem);
             systems.Register((IUpdatableSystem)charSystem);
 
+            // >>> NEW: Character lifetime & base HP <<<
+            var lifetime = new CharacterLifetimeSystem(repo, events);
+            systems.Register((IUpdatableSystem)lifetime);
+
+            var baseHealth = new BaseHealthSystem(events, repo, maxHp: 10);
+            container.BindSingleton(baseHealth); // useful if UI needs to read CurrentHp
+            systems.Register((IUpdatableSystem)baseHealth);
+
             // ==== Projectile pool + system ====
             if (projectilePrefab == null)
             {
@@ -179,7 +187,6 @@ namespace _Game.Core.DI
                 var col = projectilePrefab.GetComponent<Collider>();
                 if (col) Object.Destroy(col);
             }
-            // IMPORTANT: use initialCapacity (not initialSize)
             var projectilePool   = new GameObjectPool(projectilePrefab, initialSize: 32, parent: projectilesParent);
             var projectileSystem = new ProjectileSystem(events, repo, projectilePool);
             systems.Register((IUpdatableSystem)projectileSystem);

@@ -8,17 +8,19 @@ using _Game.Utils;
 namespace _Game.Runtime.Combat
 {
     /// Listens for AttackPerformedEvent (projectileMode) and drives projectiles.
-    /// Uses GameObjectPool. Applies damage on impact; emits ProjectileHitEvent.
     public sealed class ProjectileSystem : IUpdatableSystem
     {
         private readonly IEventBus _bus;
         private readonly CharacterRepository _repo;
-        private readonly GameObjectPool _pool;
-        private readonly List<Projectile> _live = new();
 
-        public ProjectileSystem(IEventBus bus, CharacterRepository repo, GameObjectPool pool)
+        // Pool fallback if a config has no prefab set:
+        private readonly GameObjectPool _fallbackPool;
+
+        private readonly List<(Projectile projectile, GameObjectPool pool)> _live = new();
+
+        public ProjectileSystem(IEventBus bus, CharacterRepository repo, GameObjectPool fallbackPool)
         {
-            _bus = bus; _repo = repo; _pool = pool;
+            _bus = bus; _repo = repo; _fallbackPool = fallbackPool;
             _bus.Subscribe<AttackPerformedEvent>(OnAttack);
         }
 
@@ -28,14 +30,14 @@ namespace _Game.Runtime.Combat
 
             for (int i = _live.Count - 1; i >= 0; i--)
             {
-                var p = _live[i];
+                var (p, pool) = _live[i];
 
-                // homing to current target position (if still alive)
                 Vector3 targetPos;
-                if (_repo.TryGetById(p.TargetId, out var target))
+                CharacterEntity target = null;
+                if (_repo.TryGetById(p.TargetId, out target) && target?.View?.Root)
                     targetPos = target.View.Root.position;
                 else
-                    targetPos = p.transform.position; // lost target -> stop (optional: despawn)
+                    targetPos = p.transform.position;
 
                 var to = targetPos - p.transform.position;
                 float dist = to.magnitude;
@@ -56,36 +58,40 @@ namespace _Game.Runtime.Combat
         {
             if (!e.projectileMode) return;
 
-            var go = _pool.Get();
+            // prefer per-config pooling when a prefab exists
+            GameObjectPool pool = _fallbackPool;
+            GameObject go;
+
+            if (e.projectileConfig && e.projectileConfig.projectilePrefab)
+            {
+                // create a small ephemeral pool for this prefab on first use (optional optimization)
+                pool = new GameObjectPool(e.projectileConfig.projectilePrefab, initialSize: 8, parent: null);
+            }
+
+            go = pool.Get();
             var projectile = go.GetComponent<Projectile>() ?? go.AddComponent<Projectile>();
             projectile.Init(e.sourceId, e.targetId, e.sourceWorld, e.damage, e.projectileSpeed, e.pierceCount, e.splashRadius);
-            _live.Add(projectile);
+            _live.Add((projectile, pool));
         }
 
         private void Impact(Projectile p, CharacterEntity target, Vector3 hitWorld)
         {
-            // direct hit
             if (target != null)
             {
                 for (int i = 0; i < target.Plugins.Count; i++)
                     if (target.Plugins[i] is IHealth hp) { hp.ApplyDamage(p.Damage); break; }
             }
 
-            // splash AoE (optional — keep simple / grid-based if you add it)
-            if (p.Splash > 0f)
-            {
-                // TODO: iterate repo by nearby cells and apply reduced damage
-            }
-
+            // TODO: splash AoE if p.Splash > 0f (grid-based ring)
             _bus.Fire(new ProjectileHitEvent(p.GetInstanceID(), p.TargetId, p.Damage, hitWorld));
         }
 
         private void Despawn(int liveIndex)
         {
-            var prj = _live[liveIndex];
+            var (prj, pool) = _live[liveIndex];
             _live.RemoveAt(liveIndex);
             prj.gameObject.SetActive(false);
-            _pool.Return(prj.gameObject);
+            pool.Return(prj.gameObject);
         }
     }
 }

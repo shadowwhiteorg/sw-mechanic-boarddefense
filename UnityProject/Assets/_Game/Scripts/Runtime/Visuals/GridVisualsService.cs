@@ -1,5 +1,4 @@
-﻿// Assets/_Game/Scripts/Runtime/Visuals/GridVisualsService.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using _Game.Interfaces;

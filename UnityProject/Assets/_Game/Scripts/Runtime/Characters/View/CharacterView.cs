@@ -6,25 +6,28 @@ namespace _Game.Runtime.Characters.View
     [DisallowMultipleComponent]
     public sealed class CharacterView : MonoBehaviour, ICharacterView
     {
-        [SerializeField] private SpriteRenderer[] tintables;
-
-        public Transform Root => transform;
-
-        public void Bind(object model) { /* optional visual binding */ }
-        public void Show() => gameObject.SetActive(true);
-        public void Hide() => gameObject.SetActive(false);
-
-        public void SetGhostVisual(bool ghost, bool valid)
+        // Robust Root: returns null if this component or its GameObject is destroyed
+        public Transform Root
         {
-            if (tintables == null) return;
-            var a = ghost ? 0.6f : 1f;
-            var baseCol = valid ? Color.white : new Color(.4f, 0.15f, 0.35f, 1f);
-            foreach (var r in tintables)
+            get
             {
-                if (!r) continue;
-                var c = baseCol; c.a = a;
-                r.color = c;
+                // Unity’s fake-null: destroyed UnityEngine.Object compares == null
+                if (this == null) return null;
+                var t = transform;         // will itself throw if component is in a weird state
+                return t ? t : null;
             }
+        }
+
+        public void Bind(object ctx) { /* optional: assign animator/materials, etc. */ }
+        public void Show() { if (this && Root) Root.gameObject.SetActive(true); }
+        public void Hide() { if (this && Root) Root.gameObject.SetActive(false); }
+
+        public void SetGhostVisual(bool isGhost, bool valid)
+        {
+            // Optional: plug in material swaps or color tints here.
+            // Keep safe:
+            if (!this || !Root) return;
+            // Example placeholder: do nothing by default.
         }
     }
 }
