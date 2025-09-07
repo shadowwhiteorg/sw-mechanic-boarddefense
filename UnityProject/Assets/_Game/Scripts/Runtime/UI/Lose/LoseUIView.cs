@@ -1,29 +1,26 @@
 ﻿using TMPro;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace _Game.Systems.UI.Lose
 {
-    public sealed class LoseUIView : BaseUIView
+    public class LoseUIView : BaseUIView
     {
-        public TextMeshProUGUI titleText;
-        public TextMeshProUGUI subtitleText;
+        [SerializeField] private TextMeshProUGUI messageText;
+        [SerializeField] private Button retryButton;
 
-        public Button restartButton;
-        public Button quitButton;
+        /// <summary>Invoked when the Retry button is clicked.</summary>
+        public event System.Action OnRetryClicked;
 
-        public System.Action OnRestart, OnQuit;
+        protected override void OnBind()
+        {
+            retryButton.onClick.AddListener(() => OnRetryClicked?.Invoke());
+        }
 
         protected override void OnViewUpdated()
         {
             var m = (LoseUIModel)Model;
-            if (titleText)    titleText.text    = m.Title;
-            if (subtitleText) subtitleText.text = m.Subtitle;
-        }
-
-        protected override void OnBind()
-        {
-            if (restartButton) { restartButton.onClick.RemoveAllListeners(); restartButton.onClick.AddListener(()=>OnRestart?.Invoke()); }
-            if (quitButton)    { quitButton.onClick.RemoveAllListeners();    quitButton.onClick.AddListener(()=>OnQuit?.Invoke());    }
+            messageText.text = m.Message;
         }
     }
 }

@@ -14,4 +14,7 @@ namespace _Game.Core.Events
     public readonly struct GameWonEvent : IGameEvent { }
 
     public readonly struct GameLostEvent : IGameEvent { }
+    
+    public readonly struct RestartGameEvent : IGameEvent { }
+    public readonly struct NextLevelEvent : IGameEvent { }
 }

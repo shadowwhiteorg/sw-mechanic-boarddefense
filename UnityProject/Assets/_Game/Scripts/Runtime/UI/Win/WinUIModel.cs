@@ -3,15 +3,13 @@ using _Game.Systems.UI;
 
 namespace _Game.Systems.UI.Win
 {
-    public sealed class WinUIModel : BaseUIModel
+    public class WinUIModel : BaseUIModel
     {
-        public string Title { get; private set; } = "Victory!";
-        public string Subtitle { get; private set; } = "You cleared the level.";
+        public string Message { get; private set; }
 
-        public void SetTexts(string title, string subtitle)
+        public void SetMessage(string message)
         {
-            if (!string.IsNullOrEmpty(title))    Title    = title;
-            if (!string.IsNullOrEmpty(subtitle)) Subtitle = subtitle;
+            Message = message;
             NotifyUpdated();
         }
     }

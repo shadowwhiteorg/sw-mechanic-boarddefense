@@ -31,16 +31,6 @@ using _Game.Utils;                       // GameObjectPool
 
 namespace _Game.Core.DI
 {
-    /// <summary>
-    /// Scene-level wiring for:
-    /// - Board/grid + projector + hover
-    /// - Grid visuals (optional, prefab-driven)
-    /// - Characters (factory/repo/system)
-    /// - Enemy spawning from LevelRuntimeConfig counts (top row, random column)
-    /// - Event-driven GameState (Lose on first base hit, Win when all planned enemies resolved)
-    /// - Defense selection/placement with evenly spaced lineup between two border points
-    /// - Projectiles (pooled)
-    /// </summary>
     public sealed class RuntimeInstaller : BaseInstaller
     {
         [Header("Scene")] [SerializeField] private BoardSurface boardSurface;

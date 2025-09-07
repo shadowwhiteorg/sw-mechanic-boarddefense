@@ -1,37 +1,44 @@
 ﻿using UnityEngine;
-using _Game.Core.DI;
 using _Game.Interfaces;
-using _Game.Core;  
+using _Game.Systems.UI.Lose;
+using _Game.Systems.UI.Win;
+using _Game.Systems.UISystem.Screens;
+using _Game.Systems.UISystem.Views;
 
-namespace _Game.Systems.UI.Defense
+namespace _Game.Core.DI
 {
-    public sealed class UIInstaller : BaseInstaller
+    public class UIInstaller : MonoBehaviour
     {
-        [Header("Defense Catalogue")]
-        [SerializeField] private DefenseCatalogueView   defenseCatalogueView;
-        [SerializeField] private DefenseCatalogueScreen defenseCatalogueScreen;
+        [Header("UI References")] 
+        [SerializeField] private WinUIScreen winUIScreenPrefab;
+        [SerializeField] private LoseUIScreen loseUIScreenPrefab;
+        [SerializeField] private Canvas canvasRoot;
 
-        public override void Install(IDIContainer container)
+        public void Initialize(DIContainer container, IEventBus eventBus)
         {
-            IEventBus events = GameContext.Events;
-
-            if (!defenseCatalogueView)
-                defenseCatalogueView = FindFirstObjectByType<DefenseCatalogueView>(FindObjectsInactive.Include);
-            if (!defenseCatalogueScreen)
-                defenseCatalogueScreen = FindFirstObjectByType<DefenseCatalogueScreen>(FindObjectsInactive.Include);
-
-            if (!defenseCatalogueView || !defenseCatalogueScreen)
-            {
-                Debug.LogWarning("[UIInstaller] Defense Catalogue View/Screen not found in scene. Skipping.");
-                return;
-            }
-
-            var defModel = new DefenseCatalogueModel();
-
-            container.BindSingleton(defModel);
-
-            defenseCatalogueScreen.Construct(defModel, defenseCatalogueView, events);
-
+            InstallWinUI(container, eventBus);
+            InstallLoseUI(container, eventBus);
         }
+
+        private void InstallWinUI(DIContainer container, IEventBus eventBus)
+        {
+            var model = new WinUIModel();
+            container.BindSingleton(model);
+            var screenGO = Instantiate(winUIScreenPrefab, canvasRoot.transform);
+            var view = screenGO.GetComponentInChildren<WinUIView>();
+            var screen = screenGO.GetComponent<WinUIScreen>();
+            screen.Construct(model, view, eventBus);
+        }
+        private void InstallLoseUI(DIContainer container, IEventBus eventBus)
+        {
+            var model = new LoseUIModel();
+            container.BindSingleton(model);
+            var screenGO = Instantiate(loseUIScreenPrefab, canvasRoot.transform);
+            var view = screenGO.GetComponentInChildren<LoseUIView>();
+            var screen = screenGO.GetComponent<LoseUIScreen>();
+            screen.Construct(model, view, eventBus);
+        }
+        
+        
     }
 }
