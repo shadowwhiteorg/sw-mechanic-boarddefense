@@ -1,6 +1,7 @@
 ﻿using _Game.Interfaces;
 using _Game.Runtime.Core;
 using _Game.Runtime.Characters.Config;
+using _Game.Runtime.Selection;
 
 namespace _Game.Core.Events
 {
@@ -26,5 +27,12 @@ namespace _Game.Core.Events
         public readonly Cell Cell;
         public CharacterPlacedEvent(CharacterArchetype a, int id, Cell c)
         { Archetype = a; EntityId = id; Cell = c; }
+    }
+    
+    /// <summary>Raised whenever a new SelectableCharacterView is instantiated and ready to be picked.</summary>
+    public readonly struct SelectableSpawnedEvent : IGameEvent
+    {
+        public readonly SelectableCharacterView View;
+        public SelectableSpawnedEvent(SelectableCharacterView view) => View = view;
     }
 }

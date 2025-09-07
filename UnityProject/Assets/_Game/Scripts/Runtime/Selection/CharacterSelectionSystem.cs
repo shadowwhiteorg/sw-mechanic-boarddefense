@@ -1,15 +1,28 @@
-﻿using System.Collections.Generic;
-using _Game.Core.Events;
+﻿// Assets/_Game/Scripts/Runtime/Selection/CharacterSelectionSystem.cs
+using System;
+using System.Collections.Generic;
 using UnityEngine;
-using _Game.Enums;
 using _Game.Interfaces;
-using _Game.Runtime.Board;
-using _Game.Runtime.Characters;
+using _Game.Core.Events;
+using _Game.Enums;
 using _Game.Runtime.Core;
+using _Game.Runtime.Board;
 using _Game.Runtime.Placement;
+using _Game.Runtime.Characters;
+using _Game.Runtime.Characters.Config;
+using _Game.Runtime.Levels;
 
 namespace _Game.Runtime.Selection
 {
+    /// <summary>
+    /// Drag-to-place system for selection row:
+    /// - Click a selectable on the lineup (renderer-bounds ray test).
+    /// - Drag over board plane with a small lift; on release, snap to cell if valid.
+    /// - On successful placement, spawn the real defense entity and:
+    ///   * auto-refill the same archetype at the same slot if level has remaining stock
+    ///   * decrement the level stock by one (for the refill)
+    /// - Ensures new (refilled) selectables are added to the internal list so they are pickable.
+    /// </summary>
     public sealed class CharacterSelectionSystem : IUpdatableSystem
     {
         private readonly IRayProvider _rayProvider;
@@ -24,10 +37,14 @@ namespace _Game.Runtime.Selection
         private readonly IEventBus _events;
         private readonly float _dragLift;
 
+        // New: level counts + spawner for refills
+        private readonly LevelRuntimeConfig _level;
+        private readonly CharacterSelectionSpawner _spawner;
+
         private SelectableCharacterView _selected;
         private bool _dragging;
-        private Cell? _activeCell;
         private Vector3 _cursorWorld;
+        private Cell? _hoverCell;
 
         public CharacterSelectionSystem(
             IRayProvider rayProvider,
@@ -40,21 +57,25 @@ namespace _Game.Runtime.Selection
             Transform placedParent,
             List<SelectableCharacterView> selectables,
             IEventBus events,
+            CharacterSelectionSpawner spawner,
+            LevelRuntimeConfig level,
             float dragLift = 0.01f)
         {
-            _rayProvider  = rayProvider;
-            _projector    = projector;
-            _grid         = grid;
-            _surface      = surface;
-            _factory      = factory;
-            _repo         = repo;
-            _validator    = validator;
-            _placedParent = placedParent;
-            _selectables  = selectables;
-            _events       = events;
-            _dragLift     = Mathf.Max(0f, -dragLift);
+            _rayProvider   = rayProvider;
+            _projector     = projector;
+            _grid          = grid;
+            _surface       = surface;
+            _factory       = factory;
+            _repo          = repo;
+            _validator     = validator;
+            _placedParent  = placedParent;
+            _selectables   = selectables ?? new List<SelectableCharacterView>();
+            _events        = events;
+            _spawner       = spawner;
+            _level         = level;
+            _dragLift      = Mathf.Max(0f, dragLift); // ensure positive lift
 
-            _events.Subscribe<HoverCellChangedEvent>(OnHoverCellChanged);
+            _events.Subscribe<HoverCellChangedEvent>(e => _hoverCell = e.Cell);
         }
 
         public void Tick()
@@ -74,7 +95,7 @@ namespace _Game.Runtime.Selection
                 {
                     _cursorWorld = hitWorld;
 
-                    // Free move with tiny lift to prevent z-fighting
+                    // lift to avoid z-fighting while dragging
                     var lifted = hitWorld + _surface.WorldPlaneNormal * _dragLift;
                     _selected.transform.position = lifted;
 
@@ -87,6 +108,12 @@ namespace _Game.Runtime.Selection
                         CancelDrag();
                 }
             }
+        }
+
+        public void RegisterSelectable(SelectableCharacterView view)
+        {
+            if (view != null && !_selectables.Contains(view))
+                _selectables.Add(view);
         }
 
         private void TryBeginDrag()
@@ -117,10 +144,10 @@ namespace _Game.Runtime.Selection
 
         private void TryEndDrag()
         {
-            // Prefer the currently "activated" (hovered) cell
-            if (_activeCell.HasValue && _validator.IsValid(_activeCell.Value))
+            // Use the actively hovered cell if provided by hover system; otherwise compute from cursor
+            if (_hoverCell.HasValue && _validator.IsValid(_hoverCell.Value))
             {
-                PlaceAndFinalize(_activeCell.Value);
+                PlaceAndFinalize(_hoverCell.Value);
                 return;
             }
 
@@ -137,24 +164,43 @@ namespace _Game.Runtime.Selection
         {
             _dragging = false;
 
-            // Snap to grid center
             var worldCenter = _projector.CellToWorldCenter(cell);
+            var archetype   = _selected.Archetype;
+            var refillPos   = _selected.InitialPosition;
 
-            // Spawn at worldCenter so we never inherit prefab/selection offsets
+            // Spawn the real defense entity (factory typically registers it with systems/repo)
             var entity = _factory.SpawnAtWorld(
-                _selected.Archetype,
+                archetype,
                 worldCenter,
                 cell,
                 _placedParent,
                 CharacterRole.Defense);
 
-            _repo.Add(entity, cell);
+            // If your factory doesn't auto-register, uncomment:
+            // _repo.Add(entity, cell);
 
-            // Remove selection model from pool and destroy it
-            // TODO: Use Object Pool
+            // Notify others (UI, analytics, SFX) that a defense was placed
+            _events?.Fire(new CharacterPlacedEvent(archetype, entity.EntityId, cell));
+
+            // Remove the consumed selectable
             _selectables.Remove(_selected);
-            Object.Destroy(_selected.gameObject);
+            UnityEngine.Object.Destroy(_selected.gameObject);
             _selected = null;
+
+            // === Auto-refill logic ===
+            if (_level != null && _spawner != null)
+            {
+                int remaining = _level.GetDefenseRemaining(archetype);
+                if (remaining > 1)
+                {
+                    // Decrement once and spawn a new selectable in the same slot
+                    _level.ConsumeDefenseOne(archetype);
+
+                    var refill = _spawner.SpawnAt(archetype, refillPos);
+                    RegisterSelectable(refill);
+                }
+                // else: no more stock, slot stays empty
+            }
         }
 
         private void CancelDrag()
@@ -162,14 +208,9 @@ namespace _Game.Runtime.Selection
             _dragging = false;
             if (_selected != null)
             {
-                _selected.ResetPosition(); // remains selectable after failure
+                _selected.ResetPosition(); // back to its slot
                 _selected = null;
             }
-        }
-
-        private void OnHoverCellChanged(HoverCellChangedEvent e)
-        {
-            _activeCell = e.Cell; // may be null
         }
     }
 }

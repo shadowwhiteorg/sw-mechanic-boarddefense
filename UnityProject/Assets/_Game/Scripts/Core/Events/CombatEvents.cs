@@ -71,5 +71,12 @@ namespace _Game.Core.Events
         public override string ToString() => $"BaseDamaged(Amount={Amount}, NewHp={NewHp})";
     }
     
+    public readonly struct BaseHealthChangedEvent : IGameEvent
+    {
+        public readonly int Current;
+        public readonly int Max;
+        public BaseHealthChangedEvent(int current, int max) { Current = current; Max = max; }
+    }
+    
     
 }

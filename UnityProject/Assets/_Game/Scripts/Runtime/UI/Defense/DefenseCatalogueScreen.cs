@@ -12,7 +12,7 @@ namespace _Game.Systems.UI.Defense
             base.Construct(model, view, eventBus);
 
             var levelCfg = GameContext.Container.Resolve<LevelRuntimeConfig>();
-            Model.SetItems(levelCfg.AllowedDefenseArchetypes);
+            // Model.SetItems(levelCfg.AllowedDefenseArchetypes);
 
             view.OnItemClicked += idx =>
             {

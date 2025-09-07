@@ -1,45 +1,41 @@
 ﻿// Assets/_Game/Scripts/Runtime/Combat/BaseHealthSystem.cs
 using UnityEngine;
-using _Game.Core.Events;
 using _Game.Interfaces;
-using _Game.Runtime.Characters;
+using _Game.Core.Events;
 
 namespace _Game.Runtime.Combat
 {
-    /// Tracks base HP; reacts when enemies reach bottom; despawns them via the normal death flow.
     public sealed class BaseHealthSystem : IUpdatableSystem
     {
         private readonly IEventBus _bus;
-        private readonly CharacterRepository _repo;
-        private bool _alreadyLost;
 
         public int MaxHp { get; }
         public int CurrentHp { get; private set; }
 
-        public BaseHealthSystem(IEventBus bus, CharacterRepository repo, int maxHp = 10)
+        private bool _lost;
+
+        public BaseHealthSystem(IEventBus bus, int maxHp)
         {
-            _bus = bus; _repo = repo;
+            _bus = bus;
             MaxHp = Mathf.Max(1, maxHp);
             CurrentHp = MaxHp;
+
             _bus.Subscribe<EnemyReachedBaseEvent>(OnEnemyReachedBase);
         }
 
-        public void Tick() { }
+        public void Tick() { /* event-driven; no per-frame logic needed */ }
 
-        private void OnEnemyReachedBase(EnemyReachedBaseEvent e)
+        private void OnEnemyReachedBase(EnemyReachedBaseEvent _)
         {
-            const int amount = 1;
-            CurrentHp = Mathf.Max(0, CurrentHp - amount);
-            _bus.Fire(new BaseDamagedEvent(amount, CurrentHp));
-            Debug.Log($"[GameState] Base damaged (-{amount}). HP: {CurrentHp}/{MaxHp}");
+            if (_lost) return;
 
-            if (_repo.TryGetById(e.EnemyId, out var ent))
-                _bus.Fire(new CharacterDiedEvent(ent)); // CharacterLifetimeSystem will clean up
+            CurrentHp = Mathf.Max(0, CurrentHp - 1);
+            _bus.Fire(new BaseHealthChangedEvent(CurrentHp, MaxHp));
 
-            if (!_alreadyLost && CurrentHp <= 0)
+            if (CurrentHp <= 0 && !_lost)
             {
-                _alreadyLost = true;
-                Debug.Log("[GameState] LOSE — Base HP reached 0.");
+                _lost = true;
+                Debug.Log("[GameState] Base HP reached 0 → LOST");
                 _bus.Fire(new GameLostEvent());
             }
         }
