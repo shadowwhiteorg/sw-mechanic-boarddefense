@@ -5,21 +5,18 @@ using _Game.Runtime.Selection;
 
 namespace _Game.Core.Events
 {
-    /// <summary>Fired by UI when a defense archetype is chosen for placement.</summary>
     public readonly struct CharacterSelectedEvent : IGameEvent
     {
         public readonly CharacterArchetype Archetype;
         public CharacterSelectedEvent(CharacterArchetype archetype) { Archetype = archetype; }
     }
 
-    /// <summary>Broadcast when placement mode is toggled (enter/exit).</summary>
     public struct PlacementModeChangedEvent : IGameEvent
     {
         public bool IsActive;
         public PlacementModeChangedEvent(bool active) { IsActive = active; }
     }
 
-    /// <summary>Broadcast after a character is successfully placed on the grid.</summary>
     public readonly struct CharacterPlacedEvent : IGameEvent
     {
         public readonly CharacterArchetype Archetype;
@@ -29,7 +26,6 @@ namespace _Game.Core.Events
         { Archetype = a; EntityId = id; Cell = c; }
     }
     
-    /// <summary>Raised whenever a new SelectableCharacterView is instantiated and ready to be picked.</summary>
     public readonly struct SelectableSpawnedEvent : IGameEvent
     {
         public readonly SelectableCharacterView View;

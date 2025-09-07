@@ -6,40 +6,37 @@ namespace _Game.Core.Events
 {
     public readonly struct AttackPerformedEvent : IGameEvent
     {
-        public readonly int sourceId;
-        public readonly int targetId;        // -1 for non-targeted AoE
-        public readonly Vector3 sourceWorld; // muzzle position
-        public readonly Vector3 targetWorld; // aim point at fire time
+        public readonly int SourceId;
+        public readonly int TargetId;        
+        public readonly Vector3 SourceWorld; 
+        public readonly Vector3 TargetWorld; 
 
-        // Damage & flight data (from ProjectileConfig)
-        public readonly int damage;
-        public readonly bool projectileMode;
-        public readonly float projectileSpeed;
-        public readonly int pierceCount;
-        public readonly float splashRadius;
+        public readonly int Damage;
+        public readonly bool ProjectileMode;
+        public readonly float ProjectileSpeed;
+        public readonly int PierceCount;
+        public readonly float SplashRadius;
 
-        // Optional reference for systems that want prefab/VFX info
-        public readonly ProjectileConfig projectileConfig;
+        public readonly ProjectileConfig ProjectileConfig;
 
         public AttackPerformedEvent(
             int sourceId, int targetId, Vector3 sourceWorld, Vector3 targetWorld,
             int damage, bool projectileMode, float projectileSpeed, int pierceCount, float splashRadius,
             ProjectileConfig projectileConfig)
         {
-            this.sourceId = sourceId;
-            this.targetId = targetId;
-            this.sourceWorld = sourceWorld;
-            this.targetWorld = targetWorld;
-            this.damage = damage;
-            this.projectileMode = projectileMode;
-            this.projectileSpeed = projectileSpeed;
-            this.pierceCount = pierceCount;
-            this.splashRadius = splashRadius;
-            this.projectileConfig = projectileConfig;
+            SourceId = sourceId;
+            TargetId = targetId;
+            SourceWorld = sourceWorld;
+            TargetWorld = targetWorld;
+            Damage = damage;
+            ProjectileMode = projectileMode;
+            ProjectileSpeed = projectileSpeed;
+            PierceCount = pierceCount;
+            SplashRadius = splashRadius;
+            ProjectileConfig = projectileConfig;
         }
     }
 
-    /// Raised on impact (for VFX/SFX/UI).
     public readonly struct ProjectileHitEvent : IGameEvent
     {
         public readonly int ProjectileInstanceId;
@@ -49,10 +46,10 @@ namespace _Game.Core.Events
 
         public ProjectileHitEvent(int projectileInstanceId, int targetId, int damage, Vector3 hitWorld)
         {
-            this.ProjectileInstanceId = projectileInstanceId;
-            this.TargetId = targetId;
-            this.Damage = damage;
-            this.HitWorld = hitWorld;
+            ProjectileInstanceId = projectileInstanceId;
+            TargetId = targetId;
+            Damage = damage;
+            HitWorld = hitWorld;
         }
     }
     

@@ -1,5 +1,4 @@
-﻿// Assets/_Game/Scripts/Runtime/Core/EnemySpawnerSystem.cs
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using _Game.Interfaces;
 using _Game.Enums;
@@ -11,11 +10,6 @@ using _Game.Runtime.Levels;
 
 namespace _Game.Runtime.Core
 {
-    /// <summary>
-    /// Spawns enemies based on LevelRuntimeConfig enemy counts (per archetype).
-    /// Each spawn appears at TOP row, RANDOM column. Stops when counts are exhausted.
-    /// Fires EnemySpawnedEvent(entityId) after each spawn.
-    /// </summary>
     public sealed class EnemySpawner : IUpdatableSystem
     {
         private readonly BoardGrid _grid;
@@ -35,8 +29,6 @@ namespace _Game.Runtime.Core
         private float _delay;
         private bool _done;
 
-        /// <param name="spawnInterval">Seconds between spawns.</param>
-        /// <param name="startDelay">Initial delay before first spawn.</param>
         public EnemySpawner(
             BoardGrid grid,
             GridProjector projector,
@@ -58,7 +50,6 @@ namespace _Game.Runtime.Core
             _startDelay    = Mathf.Max(0f, startDelay);
             _delay         = _startDelay;
 
-            // Snapshot counts from the level (read-only at runtime)
             if (_level?.EnemyRemaining != null)
             {
                 foreach (var kv in _level.EnemyRemaining)
@@ -137,7 +128,6 @@ namespace _Game.Runtime.Core
                 CharacterRole.Enemy
             );
 
-            // Announce the spawn so GameStateSystem can track live enemies without repo
             _bus.Fire(new EnemySpawnedEvent(entity.EntityId));
         }
     }

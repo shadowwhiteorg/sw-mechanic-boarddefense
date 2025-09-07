@@ -1,16 +1,12 @@
-﻿// Assets/_Game/Scripts/Runtime/Characters/Plugins/WeaponPlugin.cs
-using _Game.Core.Events;
+﻿using _Game.Core.Events;
 using UnityEngine;
 using _Game.Enums;
 using _Game.Interfaces;
 using _Game.Runtime.Board;
-using _Game.Runtime.Characters;
 using _Game.Runtime.Combat;
 
 namespace _Game.Runtime.Characters.Plugins
 {
-    /// Weapon now focuses on cadence & firing when ordered.
-    /// Targeting is delegated to RangedAttackPlugin.
     public sealed class WeaponPlugin : IAttack
     {
         private readonly IEventBus _bus;
@@ -42,7 +38,6 @@ namespace _Game.Runtime.Characters.Plugins
         {
             if (_self == null || target == null || !IsReady) return false;
 
-            // Validate simple range (Manhattan) before firing.
             var s = _self.Cell; var t = target.Cell;
             int md = Mathf.Abs(s.Row - t.Row) + Mathf.Abs(s.Col - t.Col);
             if (md > _rangeBlocks) return false;
@@ -53,7 +48,6 @@ namespace _Game.Runtime.Characters.Plugins
             int pierce       = proj ? proj.pierceCount  : 0;
             float splash     = proj ? proj.splashRadius : 0f;
 
-            // Build muzzle/aim
             var muzzle = _self.View.Root.TransformPoint(_cfg.muzzleOffset);
             var targetWorld = target.View.Root.position;
 
@@ -61,7 +55,6 @@ namespace _Game.Runtime.Characters.Plugins
                 _self.EntityId, target.EntityId, muzzle, targetWorld,
                 damage, _cfg.projectileMode, speed, pierce, splash, proj));
 
-            // Hitscan path: apply damage immediately using projectile.damage as the source of truth.
             if (!_cfg.projectileMode)
             {
                 for (int i = 0; i < target.Plugins.Count; i++)

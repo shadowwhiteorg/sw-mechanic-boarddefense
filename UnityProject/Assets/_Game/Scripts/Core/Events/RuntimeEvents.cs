@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using _Game.Interfaces;
 using _Game.Runtime.Characters;
-using _Game.Runtime.Characters.Config;
 using _Game.Runtime.Core;
 
 namespace _Game.Core.Events

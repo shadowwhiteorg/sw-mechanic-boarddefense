@@ -2,7 +2,6 @@
 
 namespace _Game.Runtime.Combat
 {
-    /// Pooled projectile. Simple data container; motion handled by ProjectileSystem.
     public sealed class Projectile : MonoBehaviour
     {
         public int SourceId   { get; private set; }

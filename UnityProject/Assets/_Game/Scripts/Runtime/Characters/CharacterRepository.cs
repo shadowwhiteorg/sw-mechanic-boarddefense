@@ -39,7 +39,7 @@ namespace _Game.Runtime.Characters
             if (_byCell.TryGetValue(from, out var id) && id == e.EntityId)
                 _byCell.Remove(from);
             _byCell[to] = e.EntityId;
-            _byId[e.EntityId] = e; // keep id->entity fresh
+            _byId[e.EntityId] = e;
         }
     }
 }

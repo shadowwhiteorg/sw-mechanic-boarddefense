@@ -1,7 +1,4 @@
-﻿// Assets/_Game/Scripts/Systems/UISystem/Models/WinUIModel.cs
-using _Game.Systems.UI;
-
-namespace _Game.Systems.UI.Win
+﻿namespace _Game.Systems.UI.Win
 {
     public class WinUIModel : BaseUIModel
     {

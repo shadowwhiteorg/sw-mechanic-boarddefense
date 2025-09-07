@@ -1,5 +1,4 @@
-﻿// Assets/_Game/Scripts/Runtime/Selection/SelectionHudController.cs
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using _Game.Core.Events;
 using _Game.Interfaces;
@@ -8,10 +7,7 @@ using _Game.Runtime.Characters.Config;
 
 namespace _Game.Runtime.Selection
 {
-    /// <summary>
-    /// Spawns one SelectionSlotHud per archetype slot and keeps it updated.
-    /// Now reads evenly-spaced slot anchors directly from CharacterSelectionSpawner.
-    /// </summary>
+   
     public sealed class SelectionHudController
     {
         private readonly LevelRuntimeConfig _level;
@@ -40,14 +36,12 @@ namespace _Game.Runtime.Selection
             _events.Subscribe<CharacterPlacedEvent>(OnPlaced);
         }
 
-        /// <summary>
-        /// Create one HUD per slot using the spawner’s evenly-spaced anchors.
-        /// </summary>
+       
         public void BuildFromSpawner(CharacterSelectionSpawner spawner)
         {
             if (spawner == null || _hudPrefab == null) return;
 
-            foreach (var kv in spawner.SlotAnchors) // (archetype -> anchor)
+            foreach (var kv in spawner.SlotAnchors)
             {
                 RegisterSlot(kv.Key, kv.Value);
             }
@@ -62,7 +56,6 @@ namespace _Game.Runtime.Selection
             var go = Object.Instantiate(_hudPrefab, _hudParent, worldPositionStays: true);
             go.name = $"HUD_{(string.IsNullOrWhiteSpace(arch.displayName) ? arch.name : arch.displayName)}";
 
-            // place immediately at the anchor + Y offset
             go.transform.position = anchor.position + Vector3.up * _yOffset;
 
             var hud = go.GetComponent<SelectionSlotHud>();

@@ -1,10 +1,8 @@
-﻿// --- FILE: DefenseCatalogueView.cs ---
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace _Game.Systems.UI.Defense
 {
-    /// <summary>Renders the catalogue and selection state.</summary>
     public sealed class DefenseCatalogueView : BaseUIView
     {
         [Header("List")]
@@ -19,14 +17,12 @@ namespace _Game.Systems.UI.Defense
 
         protected override void OnBind()
         {
-            // Bound once when View.Bind(Model) is called by the Screen (per BaseUIView).
         }
 
         protected override void OnViewUpdated()
         {
             var m = (DefenseCatalogueModel)Model;
 
-            // build / trim list to match data
             var need = m.Items?.Count ?? 0;
             while (_spawned.Count < need)
             {
@@ -42,7 +38,6 @@ namespace _Game.Systems.UI.Defense
                 _spawned.RemoveAt(_spawned.Count - 1);
             }
 
-            // bind & selection visuals
             for (int i = 0; i < _spawned.Count; i++)
             {
                 var v = _spawned[i];

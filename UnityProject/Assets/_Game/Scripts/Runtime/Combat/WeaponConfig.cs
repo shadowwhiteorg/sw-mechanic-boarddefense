@@ -9,7 +9,7 @@ namespace _Game.Runtime.Combat
         [Header("Cadence & Range")]
         [Min(0.05f)] public float fireRate = 1.0f; // shots/sec
         [Min(0)]     public int   rangeBlocks = 4;
-        public bool   projectileMode = true; // false => hitscan using projectileConfig.damage
+        public bool   projectileMode = true; 
 
         [Header("Projectile")]
         public ProjectileConfig projectileConfig;
@@ -18,7 +18,6 @@ namespace _Game.Runtime.Combat
         public Vector3 muzzleOffset = Vector3.zero;
         
         [Header("Combat")]
-        // [Min(0)]      public int   attackRangeBlocks = 1;             // grid blocks
         public AttackDirection     attackDirection    = AttackDirection.Forward;
     }
 }

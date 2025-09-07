@@ -8,7 +8,6 @@ namespace _Game.Interfaces
         void Bind(object ctx);
         void Show();
         void Hide();
-        /// isGhost: use a ghost material; valid: green/red tint etc.
         void SetGhostVisual(bool isGhost, bool valid);
     }
 

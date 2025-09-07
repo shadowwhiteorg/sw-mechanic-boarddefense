@@ -1,20 +1,17 @@
-﻿// Assets/_Game/Scripts/Runtime/Characters/CharacterFactory.cs
-using UnityEngine;
-using _Game.Core;                         // GameContext
+﻿using UnityEngine;
+using _Game.Core;                       
 using _Game.Enums;
-using _Game.Interfaces; // CharacterRole
-using _Game.Runtime.Board;                // BoardGrid, BoardSurface, GridProjector
-using _Game.Runtime.Characters.Config;    // CharacterArchetype
-using _Game.Runtime.Characters.Plugins;   // HealthPlugin, WeaponPlugin, RangedAttackPlugin, MovementPlugin
-using _Game.Runtime.Characters.View;      // CharacterView, ICharacterView
-using _Game.Runtime.Combat;               // WeaponConfig
-using _Game.Runtime.Core;                 // Cell
-using _Game.Utils;                        // GameObjectPool
+using _Game.Interfaces;
+using _Game.Runtime.Board;              
+using _Game.Runtime.Characters.Config;  
+using _Game.Runtime.Characters.Plugins; 
+using _Game.Runtime.Characters.View;    
+using _Game.Runtime.Combat;             
+using _Game.Runtime.Core;               
+using _Game.Utils;                      
 
 namespace _Game.Runtime.Characters
 {
-    /// Spawns characters, composes their plugins, registers them for ticking,
-    /// and keeps the repository mapping accurate at spawn time.
     public sealed class CharacterFactory
     {
         private readonly CharacterPoolRegistry _pools;
@@ -27,10 +24,8 @@ namespace _Game.Runtime.Characters
 
         public CharacterEntity Spawn(CharacterArchetype archetype, Cell cell, Transform parent, CharacterRole role)
         {
-            // Create / fetch a pooled view root.
             Transform root = GetOrCreateUnitRoot(archetype, parent);
 
-            // Ensure a concrete view exists.
             var view =
                 root.GetComponent<ICharacterView>() ??
                 (root.GetComponent<CharacterView>() ?? root.gameObject.AddComponent<CharacterView>());
@@ -45,7 +40,6 @@ namespace _Game.Runtime.Characters
             // Attach gameplay plugins.
             AttachPlugins(entity);
 
-            // Add to repository & register to character system for ticking.
             var repo = GameContext.Container.Resolve<CharacterRepository>();
             repo.Add(entity, cell);
 
@@ -72,7 +66,6 @@ namespace _Game.Runtime.Characters
 
             if (e.Role == CharacterRole.Defense)
             {
-                // Defense = cadence (Weapon) + targeting (Ranged).
                 var events   = GameContext.Events;
                 var grid     = GameContext.Container.Resolve<BoardGrid>();
                 var repo     = GameContext.Container.Resolve<CharacterRepository>();
@@ -139,7 +132,6 @@ namespace _Game.Runtime.Characters
 
         private Transform GetOrCreateUnitRoot(CharacterArchetype archetype, Transform parent)
         {
-            // Prefer pooled creation when registry is present.
             if (_pools != null)
             {
                 var unitPool = _pools.GetUnitPool(archetype, () =>
@@ -156,7 +148,6 @@ namespace _Game.Runtime.Characters
                 return go.transform;
             }
 
-            // Fallback: direct instantiate.
             var instance = archetype.viewPrefab
                 ? Object.Instantiate(archetype.viewPrefab, parent, false)
                 : new GameObject("CharacterView");

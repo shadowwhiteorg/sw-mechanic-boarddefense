@@ -56,10 +56,8 @@ namespace _Game.Systems.UI
             }
         }
 
-        /// <summary>Called once after model is bound.</summary>
         protected virtual void OnBind() { }
 
-        /// <summary>Called whenever the model updates.</summary>
         protected abstract void OnViewUpdated();
     }
 }

@@ -1,5 +1,4 @@
-﻿using _Game.Enums;
-using UnityEngine;
+﻿using UnityEngine;
 using _Game.Runtime.Combat;
 
 namespace _Game.Runtime.Characters.Config

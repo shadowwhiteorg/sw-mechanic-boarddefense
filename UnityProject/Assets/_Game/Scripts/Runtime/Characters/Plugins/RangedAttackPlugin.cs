@@ -1,20 +1,17 @@
-﻿// Assets/_Game/Scripts/Runtime/Characters/Plugins/RangedAttackPlugin.cs
-using UnityEngine;
+﻿using UnityEngine;
 using _Game.Enums;
 using _Game.Interfaces;
 using _Game.Runtime.Board;
-using _Game.Runtime.Characters;
 
 namespace _Game.Runtime.Characters.Plugins
 {
-    /// Performs target acquisition (Forward or Omni) and orders WeaponPlugin to fire.
     public sealed class RangedAttackPlugin : IAttack
     {
         private readonly CharacterRepository _repo;
         private readonly BoardGrid _grid;
         private readonly AttackDirection _direction;
         private readonly int _maxRangeCells;
-        private WeaponPlugin _weapon; // injected after both plugins are created
+        private WeaponPlugin _weapon;
 
         private CharacterEntity _self;
 

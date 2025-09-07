@@ -9,7 +9,6 @@ namespace _Game.Systems.UI.Lose
         [SerializeField] private TextMeshProUGUI messageText;
         [SerializeField] private Button retryButton;
 
-        /// <summary>Invoked when the Retry button is clicked.</summary>
         public event System.Action OnRetryClicked;
 
         protected override void OnBind()

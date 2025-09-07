@@ -9,7 +9,6 @@ namespace _Game.Runtime.Board
         public GridSize Size { get; }
         public float CellSize { get; }
 
-        // Bottom half rule: defenses allowed where Row < PlaceableRowCount
         public int PlaceableRowCount => Size.Rows / 2;
 
         private readonly bool[,] _occupied; // [row, col]
@@ -46,11 +45,9 @@ namespace _Game.Runtime.Board
 
         public bool IsDefensePlacementAllowed(Cell c)
         {
-            // Bottom half only: rows [0 .. PlaceableRowCount-1]
             return InBounds(c) && c.Row < PlaceableRowCount && !_occupied[c.Row, c.Col];
         }
 
-        /// <summary>Local-center of a cell in board local space (X/Z plane).</summary>
         public Vector3 CellToLocalCenter(Cell c)
         {
             if (!InBounds(c)) throw new ArgumentOutOfRangeException(nameof(c));
@@ -59,9 +56,7 @@ namespace _Game.Runtime.Board
             return new Vector3(x, 0f, z);
         }
 
-        /// <summary>
-        /// Convert a local-space position (X/Z) into a Cell (floored). Returns false if outside.
-        /// </summary>
+       
         public bool TryLocalToCell(Vector3 local, out Cell cell)
         {
             int col = Mathf.FloorToInt(local.x / CellSize);

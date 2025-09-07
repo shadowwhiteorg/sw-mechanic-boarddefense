@@ -1,5 +1,4 @@
-﻿// Assets/_Game/Scripts/Runtime/Combat/GameStateSystem.cs
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using _Game.Interfaces;
 using _Game.Core.Events;
@@ -7,16 +6,7 @@ using _Game.Runtime.Levels;
 
 namespace _Game.Runtime.Combat
 {
-    /// <summary>
-    /// Win/Lose controller without repository dependency:
-    /// - Tracks spawned enemy IDs via EnemySpawnedEvent.
-    /// - Lose immediately on EnemyReachedBaseEvent (first hit ends the game).
-    /// - Win when all planned enemies were spawned AND no live enemies remain
-    ///   (i.e., every spawned enemy either died or reached the base).
-    /// 
-    /// This avoids needing CharacterRepository to filter roles:
-    /// we only ever count IDs that were actually spawned as ENEMIES.
-    /// </summary>
+   
     public sealed class GameStateSystem : IUpdatableSystem
     {
         private readonly IEventBus _bus;
@@ -27,7 +17,6 @@ namespace _Game.Runtime.Combat
         private bool _lost;
         private bool _won;
 
-        // Track "live" enemies by their entity ids
         private readonly HashSet<int> _live = new();
 
         public GameStateSystem(IEventBus bus, LevelRuntimeConfig level)
@@ -46,7 +35,7 @@ namespace _Game.Runtime.Combat
 #endif
         }
 
-        public void Tick() { /* event-driven */ }
+        public void Tick() {  }
 
         private static int SumPlannedEnemies(LevelRuntimeConfig level)
         {
@@ -65,17 +54,13 @@ namespace _Game.Runtime.Combat
 
             _spawnedEnemies++;
             _live.Add(e.EntityId);
-
-#if UNITY_EDITOR
-            // Debug.Log($"[GameState] Spawned { _spawnedEnemies }/{ _totalPlannedEnemies }, Live={ _live.Count }");
-#endif
+            
         }
 
         private void OnCharacterDied(CharacterDiedEvent e)
         {
             if (_won || _lost) return;
 
-            // Count only if it is a tracked enemy (spawned by spawner)
             if (_live.Remove(e.Entity.EntityId))
             {
                 TryWin();
@@ -86,7 +71,6 @@ namespace _Game.Runtime.Combat
         {
             if (_won || _lost) return;
 
-            // Remove from live if it was tracked, then lose immediately
             _live.Remove(e.EnemyId);
 
             _lost = true;

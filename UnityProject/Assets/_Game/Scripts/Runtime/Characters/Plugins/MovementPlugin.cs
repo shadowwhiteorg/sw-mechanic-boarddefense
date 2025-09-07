@@ -1,10 +1,9 @@
 ﻿using UnityEngine;
-using _Game.Core;                // GameContext
-using _Game.Core.Events;         // EnemyReachedBaseEvent
-using _Game.Interfaces;          // IMovement
-using _Game.Runtime.Board;       // BoardGrid, BoardSurface, GridProjector
-using _Game.Runtime.Characters;  // CharacterEntity, CharacterRepository
-using _Game.Runtime.Core;        // Cell
+using _Game.Core;                
+using _Game.Core.Events;         
+using _Game.Interfaces;          
+using _Game.Runtime.Board;       
+using _Game.Runtime.Core;        
 
 namespace _Game.Runtime.Characters.Plugins
 {
@@ -21,7 +20,7 @@ namespace _Game.Runtime.Characters.Plugins
         private Vector3 _toWorld;
         private float _t;
         private float _segmentTime;
-        private bool _baseReached; // prevent double event
+        private bool _baseReached;
 
         public MovementPlugin(BoardGrid grid,
                               BoardSurface surface,
@@ -46,7 +45,7 @@ namespace _Game.Runtime.Characters.Plugins
 
             root.position = _projector.CellToWorldCenter(_e.Cell);
             _t = 0f;
-            PrepareNextSegment(); // will immediately fire base event if already at bottom
+            PrepareNextSegment(); 
         }
 
         public void OnDespawn()
@@ -63,11 +62,10 @@ namespace _Game.Runtime.Characters.Plugins
 
             if (_segmentTime <= 0f)
             {
-                // No active segment: we might have reached base in PrepareNextSegment()
-                // or need to prepare the next segment from current cell.
+                
                 PrepareNextSegment();
                 if (_baseReached) return;
-                if (_segmentTime <= 0f) return; // still nothing to do
+                if (_segmentTime <= 0f) return;
             }
 
             _t += dt / _segmentTime;
@@ -78,20 +76,17 @@ namespace _Game.Runtime.Characters.Plugins
                 return;
             }
 
-            // Snap to target and advance logic for next step.
             root.position = _toWorld;
 
             var c = _e.Cell;
-            int nextRow = c.Row - 1; // marching downward
+            int nextRow = c.Row - 1; 
 
-            // If moving from row 0 => nextRow becomes -1: fire event here too (belt & suspenders)
             if (nextRow < 0)
             {
                 FireBaseReached();
                 return;
             }
 
-            // Update logical cell and repository index.
             var nextCell = new Cell(nextRow, c.Col);
             _repo.Remove(_e);
             _e.Cell = nextCell;
@@ -111,8 +106,6 @@ namespace _Game.Runtime.Characters.Plugins
             int nextRow = c.Row - 1;
             if (nextRow < 0)
             {
-                // Critical fix: if the next step would leave the board,
-                // fire the base-reached event immediately.
                 _toWorld = _fromWorld;
                 _segmentTime = 0f;
                 _t = 0f;
@@ -137,12 +130,11 @@ namespace _Game.Runtime.Characters.Plugins
                 GameContext.Events?.Fire(new EnemyReachedBaseEvent(_e.EntityId));
         }
 
-        /// Safe access to the entity's Transform. Returns null if the view is gone.
         private Transform RootOrNull()
         {
             if (_e == null) return null;
             var view = _e.View;
-            if (view == null) return null; // Unity destroyed component => fake-null
+            if (view == null) return null; 
             var root = view.Root;
             return root ? root : null;
         }

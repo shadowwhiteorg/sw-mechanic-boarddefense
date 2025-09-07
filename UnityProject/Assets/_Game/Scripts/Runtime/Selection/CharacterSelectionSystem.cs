@@ -1,6 +1,4 @@
-﻿// Assets/_Game/Scripts/Runtime/Selection/CharacterSelectionSystem.cs
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using _Game.Interfaces;
 using _Game.Core.Events;
@@ -9,20 +7,10 @@ using _Game.Runtime.Core;
 using _Game.Runtime.Board;
 using _Game.Runtime.Placement;
 using _Game.Runtime.Characters;
-using _Game.Runtime.Characters.Config;
 using _Game.Runtime.Levels;
 
 namespace _Game.Runtime.Selection
 {
-    /// <summary>
-    /// Drag-to-place system for selection row:
-    /// - Click a selectable on the lineup (renderer-bounds ray test).
-    /// - Drag over board plane with a small lift; on release, snap to cell if valid.
-    /// - On successful placement, spawn the real defense entity and:
-    ///   * auto-refill the same archetype at the same slot if level has remaining stock
-    ///   * decrement the level stock by one (for the refill)
-    /// - Ensures new (refilled) selectables are added to the internal list so they are pickable.
-    /// </summary>
     public sealed class CharacterSelectionSystem : IUpdatableSystem
     {
         private readonly IRayProvider _rayProvider;
@@ -37,7 +25,6 @@ namespace _Game.Runtime.Selection
         private readonly IEventBus _events;
         private readonly float _dragLift;
 
-        // New: level counts + spawner for refills
         private readonly LevelRuntimeConfig _level;
         private readonly CharacterSelectionSpawner _spawner;
 
@@ -144,7 +131,6 @@ namespace _Game.Runtime.Selection
 
         private void TryEndDrag()
         {
-            // Use the actively hovered cell if provided by hover system; otherwise compute from cursor
             if (_hoverCell.HasValue && _validator.IsValid(_hoverCell.Value))
             {
                 PlaceAndFinalize(_hoverCell.Value);
@@ -168,7 +154,6 @@ namespace _Game.Runtime.Selection
             var archetype   = _selected.Archetype;
             var slotPos     = _selected.InitialPosition;
 
-            // 1) Spawn the real defense entity first
             var entity = _factory.SpawnAtWorld(
                 archetype,
                 worldCenter,
@@ -176,21 +161,15 @@ namespace _Game.Runtime.Selection
                 _placedParent,
                 CharacterRole.Defense);
 
-            // If your factory doesn't auto-register, keep your existing repo.Add(...) here
-            // _repo.Add(entity, cell);
-
-            // 2) Clean up the consumed selectable (free the slot before we refill)
             _selectables.Remove(_selected);
             UnityEngine.Object.Destroy(_selected.gameObject);
             _selected = null;
 
-            // 3) Decrement stock and (if still > 0 afterwards) refill the same slot
             if (_level != null && _spawner != null)
             {
                 int rem = _level.GetDefenseRemaining(archetype);
                 if (rem > 1)
                 {
-                    // Consume one *before* notifying listeners so HUDs see the new value
                     _level.ConsumeDefenseOne(archetype);
 
                     var refill = _spawner.SpawnAt(archetype, slotPos);
@@ -198,7 +177,6 @@ namespace _Game.Runtime.Selection
                 }
             }
 
-            // 4) NOW broadcast the placement — HUDs that refresh on this event will read the decremented value
             _events?.Fire(new CharacterPlacedEvent(archetype, entity.EntityId, cell));
         }
 
@@ -207,7 +185,7 @@ namespace _Game.Runtime.Selection
             _dragging = false;
             if (_selected != null)
             {
-                _selected.ResetPosition(); // back to its slot
+                _selected.ResetPosition();
                 _selected = null;
             }
         }

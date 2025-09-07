@@ -1,7 +1,5 @@
 ﻿using _Game.Interfaces;                                
 using _Game.Core.Events;                               
-using _Game.Core;                                      
-using _Game.Runtime.Levels;                            
 
 namespace _Game.Systems.UI.Defense
 {
@@ -10,9 +8,6 @@ namespace _Game.Systems.UI.Defense
         public override void Construct(DefenseCatalogueModel model, DefenseCatalogueView view, IEventBus eventBus)
         {
             base.Construct(model, view, eventBus);
-
-            var levelCfg = GameContext.Container.Resolve<LevelRuntimeConfig>();
-            // Model.SetItems(levelCfg.AllowedDefenseArchetypes);
 
             view.OnItemClicked += idx =>
             {

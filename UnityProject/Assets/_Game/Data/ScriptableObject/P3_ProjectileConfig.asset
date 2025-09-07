@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_Game.Runtime.Combat.ProjectileConfig
   projectilePrefab: {fileID: 1868454030377647705, guid: 4c959ed348c6e6d40b3fcefadac7e0fc, type: 3}
   damage: 10
-  speed: 3
+  speed: 10
   pierceCount: 0
   splashRadius: 0

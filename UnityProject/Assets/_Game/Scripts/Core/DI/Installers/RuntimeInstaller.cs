@@ -1,36 +1,18 @@
-﻿// Assets/_Game/Scripts/_Core/DI/RuntimeInstaller.cs
-using UnityEngine;
-
-using _Game.Core;
-using _Game.Core.Constants; // GameContext
-using _Game.Core.DI;
-using _Game.Core.Events; // BaseInstaller
-using _Game.Interfaces;                  // IDIContainer, IUpdatableSystem, IEventBus
-
-// Board
-using _Game.Runtime.Board;               // BoardSurface, BoardGrid, GridProjector, ScreenSpaceRayProvider
-
-// Characters
-using _Game.Runtime.Characters;          // CharacterPoolRegistry, CharacterFactory, CharacterRepository, CharacterSystem
-
-// Placement & Selection (DEFENSE flow)
-using _Game.Runtime.Placement;           // PlacementValidator, PlacementPreviewService
-using _Game.Runtime.Selection;           // CharacterSelectionSpawner, CharacterSelectionSystem
-
-// Level
-using _Game.Runtime.Levels;              // LevelCatalogue, LevelRuntimeConfig
-
-// Combat
-using _Game.Runtime.Combat;              // ProjectileSystem, CharacterLifetimeSystem, GameStateSystem
-using _Game.Runtime.Core;                // EnemySpawnerSystem (counts-based)
-
-// Visuals
-using _Game.Runtime.Systems;             // PointerHoverSystem
-using _Game.Runtime.Visuals;             // GridVisualsService
-
-// Utils
+﻿using UnityEngine;
+using _Game.Core.Constants; 
+using _Game.Core.Events; 
+using _Game.Interfaces;
+using _Game.Runtime.Board;
+using _Game.Runtime.Characters;
+using _Game.Runtime.Placement; 
+using _Game.Runtime.Selection;
+using _Game.Runtime.Levels;
+using _Game.Runtime.Combat; 
+using _Game.Runtime.Core; 
+using _Game.Runtime.Systems; 
+using _Game.Runtime.Visuals;
 using _Game.Utils;
-using UnityEngine.SceneManagement; // GameObjectPool
+using UnityEngine.SceneManagement;
 
 namespace _Game.Core.DI
 {
@@ -39,8 +21,8 @@ namespace _Game.Core.DI
         [Header("Scene")] [SerializeField] private BoardSurface boardSurface;
         [SerializeField] private Camera targetCamera;
 
-        [Header("Parents")] [SerializeField] private Transform unitsParent; // spawned defenses & enemies
-        [SerializeField] private Transform projectilesParent; // pooled projectiles
+        [Header("Parents")] [SerializeField] private Transform unitsParent; 
+        [SerializeField] private Transform projectilesParent;
 
         [Header("Grid Visuals (Prefabs)")] [SerializeField]
         private GameObject placeableCellPrefab;
@@ -75,7 +57,6 @@ namespace _Game.Core.DI
             var events = GameContext.Events;
             var systems = GameContext.Systems;
 
-            // ---- Guards ----
             if (!boardSurface)
             {
                 Debug.LogError("[RuntimeInstaller] BoardSurface is not assigned.");
@@ -144,7 +125,6 @@ namespace _Game.Core.DI
             }
 
             // ==== Level runtime ====
-            // var levelData = levelCatalogue.GetById(levelId);
             
             var levelData = levelCatalogue.GetByLevelNr(PlayerPrefs.GetInt(GameConstants.PlayerPrefsLevel,1 ));
             if (levelData == null)
@@ -167,7 +147,7 @@ namespace _Game.Core.DI
             {
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             });
-            var level = new LevelRuntimeConfig(levelData); // must expose DefenseRemaining & EnemyRemaining dictionaries
+            var level = new LevelRuntimeConfig(levelData); 
             container.BindSingleton(level);
 
             // ==== Parents ====
@@ -217,12 +197,11 @@ namespace _Game.Core.DI
 
             // ==== Lifetime (despawns, cleanup) ====
             var lifetime = new CharacterLifetimeSystem(repo, events);
-            systems.Register((IUpdatableSystem)lifetime);
+            systems.Register(lifetime);
 
-            // ==== Game state (HP-less): lose on first base hit, win when all planned enemies resolved ====
             var gameState = new GameStateSystem(events, level);
             container.BindSingleton(gameState);
-            systems.Register((IUpdatableSystem)gameState);
+            systems.Register(gameState);
 
             // ==== Projectile pool + system ====
             if (projectilePrefab == null)
@@ -236,28 +215,23 @@ namespace _Game.Core.DI
 
             var projectilePool = new GameObjectPool(projectilePrefab, initialSize: 32, parent: projectilesParent);
             var projectileSystem = new ProjectileSystem(events, repo, projectilePool);
-            systems.Register((IUpdatableSystem)projectileSystem);
+            systems.Register(projectileSystem);
 
-            // ==== Enemy spawner (counts-based; top row, random column) ====
-            // This EnemySpawnerSystem takes LevelRuntimeConfig + IEventBus (fires EnemySpawnedEvent)
             var enemySpawner = new EnemySpawner(
                 grid, projector, factory, level, unitsParent, events,
                 spawnInterval: 1.0f, startDelay: 0.25f);
             systems.Register((IUpdatableSystem)enemySpawner);
 
-            // ==== DEFENSE selection + placement (evenly between two points) ====
             var validator = new PlacementValidator(repo, grid);
             container.BindSingleton(validator);
 
             var previewSvc = new PlacementPreviewService(factory, boardSurface, projector, validator, unitsParent);
             container.BindSingleton(previewSvc);
 
-            // Evenly spaced lineup between Left/Right
             var selectionSpawner = new CharacterSelectionSpawner(
                 level, selectionSpawnLeft, selectionSpawnRight, selectionModelsParent);
             var selectables = selectionSpawner.Spawn();
 
-            // Pass spawner + level so auto-refill can register new selectables
             var selectionSystem = new CharacterSelectionSystem(
                 rayProvider, projector, grid, boardSurface,
                 factory, repo, validator, unitsParent,
@@ -265,14 +239,13 @@ namespace _Game.Core.DI
                 spawner: selectionSpawner,
                 level: level,
                 dragLift: dragLiftWhileDragging);
-            systems.Register((IUpdatableSystem)selectionSystem);
+            systems.Register(selectionSystem);
 
             if (slotHudPrefab != null)
             {
                 var hudController = new SelectionHudController(level, events, targetCamera, slotHudPrefab, selectionModelsParent, slotHudYOffset);
                 container.BindSingleton(hudController);
 
-                // This reads CharacterSelectionSpawner.SlotAnchors so HUDs spawn evenly along Left<->Right
                 hudController.BuildFromSpawner(selectionSpawner);
             }
         }
