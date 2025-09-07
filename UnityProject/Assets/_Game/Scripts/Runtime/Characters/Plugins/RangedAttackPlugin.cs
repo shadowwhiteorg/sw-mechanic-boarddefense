@@ -2,6 +2,7 @@
 using _Game.Enums;
 using _Game.Interfaces;
 using _Game.Runtime.Board;
+using _Game.Runtime.Core;
 
 namespace _Game.Runtime.Characters.Plugins
 {
@@ -17,7 +18,7 @@ namespace _Game.Runtime.Characters.Plugins
 
         public RangedAttackPlugin(CharacterRepository repo, BoardGrid grid, AttackDirection direction, int maxRangeCells)
         {
-            _repo = repo; _grid = grid; _direction = direction; 
+            _repo = repo; _grid = grid; _direction = direction;
             _maxRangeCells = Mathf.Max(0, maxRangeCells);
         }
 
@@ -37,13 +38,23 @@ namespace _Game.Runtime.Characters.Plugins
         private CharacterEntity AcquireForward()
         {
             var s = _self.Cell;
-            int maxRow = Mathf.Min(_grid.Size.Rows - 1, s.Row + _maxRangeCells);
-            for (int r = s.Row + 1; r <= maxRow; r++)
+
+            int step = (_self.Role == CharacterRole.Enemy) ? -1 : +1;
+
+            int rStart = s.Row + step;
+            int rEndExclusive = (_self.Role == CharacterRole.Enemy)
+                ? Mathf.Max(0, s.Row - _maxRangeCells) - 1  
+                : Mathf.Min(_grid.Size.Rows - 1, s.Row + _maxRangeCells) + 1;
+
+            for (int r = rStart; r != rEndExclusive; r += step)
             {
-                var c = new _Game.Runtime.Core.Cell(r, s.Col);
-                if (_repo.TryGetByCell(c, out var e) && e.Role == _Game.Enums.CharacterRole.Enemy)
+                if (r < 0 || r >= _grid.Size.Rows) break;
+
+                var c = new Cell(r, s.Col);
+                if (_repo.TryGetByCell(c, out var e) && e.Role != _self.Role)
                     return e;
             }
+
             return null;
         }
 
@@ -55,16 +66,24 @@ namespace _Game.Runtime.Characters.Plugins
             int cMin = Mathf.Max(0, s.Col - _maxRangeCells);
             int cMax = Mathf.Min(_grid.Size.Cols - 1, s.Col + _maxRangeCells);
 
-            int best = int.MaxValue; CharacterEntity bestE = null;
+            int bestManhattan = int.MaxValue;
+            CharacterEntity best = null;
+
             for (int r = rMin; r <= rMax; r++)
             for (int c = cMin; c <= cMax; c++)
             {
-                var cell = new _Game.Runtime.Core.Cell(r, c);
-                if (!_repo.TryGetByCell(cell, out var e) || e.Role != _Game.Enums.CharacterRole.Enemy) continue;
+                var cell = new Cell(r, c);
+                if (!_repo.TryGetByCell(cell, out var e)) continue;
+                if (e.Role == _self.Role) continue;
+
                 int d = Mathf.Abs(r - s.Row) + Mathf.Abs(c - s.Col);
-                if (d <= _maxRangeCells && d < best) { best = d; bestE = e; }
+                if (d <= _maxRangeCells && d < bestManhattan)
+                {
+                    bestManhattan = d;
+                    best = e;
+                }
             }
-            return bestE;
+            return best;
         }
     }
 }
