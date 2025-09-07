@@ -8,10 +8,8 @@ namespace _Game.Runtime.Characters.Config
     public sealed class CharacterArchetype : ScriptableObject
     {
         [Header("Identity")]
-        public string id;
         public string displayName;
         public Sprite icon;
-        public bool isEnemy;
 
         [Header("View")]
         public GameObject viewPrefab;
@@ -20,9 +18,7 @@ namespace _Game.Runtime.Characters.Config
         [Min(1)]      public int   baseHealth   = 10;
         [Min(0)]      public float moveSpeed    = 0f;   // 0 for defenses
 
-        [Header("Combat")]
-        [Min(0)]      public int   attackRangeBlocks = 1;             // grid blocks
-        public AttackDirection     attackDirection    = AttackDirection.Forward;
+        
 
         [Tooltip("Weapon ScriptableObject carried by this character archetype.")]
         public WeaponConfig weapon;

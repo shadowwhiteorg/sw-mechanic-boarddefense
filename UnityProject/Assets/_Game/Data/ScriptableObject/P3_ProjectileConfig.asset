@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c2225047d3ed44b397116b7eebc2d58a, type: 3}
-  m_Name: P1_ProjectileConfig
+  m_Name: P3_ProjectileConfig
   m_EditorClassIdentifier: Assembly-CSharp::_Game.Runtime.Combat.ProjectileConfig
   projectilePrefab: {fileID: 1868454030377647705, guid: 4c959ed348c6e6d40b3fcefadac7e0fc, type: 3}
-  damage: 3
+  damage: 10
   speed: 3
   pierceCount: 0
   splashRadius: 0

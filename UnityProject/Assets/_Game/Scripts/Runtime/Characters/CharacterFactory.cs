@@ -82,16 +82,16 @@ namespace _Game.Runtime.Characters
                 var weapon = new WeaponPlugin(
                     events,
                     grid,
-                    e.Archetype.attackDirection,
-                    e.Archetype.attackRangeBlocks,
+                    e.Archetype.weapon.attackDirection,
+                    e.Archetype.weapon.rangeBlocks,
                     wcfg
                 );
 
                 var ranged = new RangedAttackPlugin(
                     repo,
                     grid,
-                    e.Archetype.attackDirection,
-                    e.Archetype.attackRangeBlocks
+                    e.Archetype.weapon.attackDirection,
+                    e.Archetype.weapon.rangeBlocks
                 );
 
                 ranged.BindWeapon(weapon);
@@ -105,7 +105,25 @@ namespace _Game.Runtime.Characters
                 var surface   = GameContext.Container.Resolve<BoardSurface>();
                 var projector = GameContext.Container.Resolve<GridProjector>();
                 var repo      = GameContext.Container.Resolve<CharacterRepository>();
+                
+                var ranged = new RangedAttackPlugin(
+                    repo,
+                    grid,
+                    e.Archetype.weapon.attackDirection,
+                    e.Archetype.weapon.rangeBlocks
+                );
+                WeaponConfig wcfg = e.Archetype.weapon;
 
+                var weapon = new WeaponPlugin(
+                    GameContext.Events,
+                    grid,
+                    e.Archetype.weapon.attackDirection,
+                    e.Archetype.weapon.rangeBlocks,
+                    wcfg
+                );
+                e.AddPlugin(weapon);
+                e.AddPlugin(ranged);
+                
                 if (e.Archetype.moveSpeed > 0f)
                 {
                     e.AddPlugin(new MovementPlugin(
