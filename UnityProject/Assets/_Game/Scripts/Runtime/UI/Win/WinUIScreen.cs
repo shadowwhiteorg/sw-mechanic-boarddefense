@@ -1,4 +1,5 @@
 ﻿using _Game.Core.Events;
+using _Game.Core.Constants;
 using _Game.Interfaces;
 using _Game.Systems.UI;
 using _Game.Systems.UI.Win;
@@ -15,12 +16,13 @@ namespace _Game.Systems.UISystem.Screens
             // Show on level complete
             eventBus.Subscribe<GameWonEvent>(e =>
             {
-                model.SetMessage(PlayerPrefs.GetInt("CurrentLevel",1).ToString());
+                model.SetMessage(PlayerPrefs.GetInt(GameConstants.PlayerPrefsLevel,1).ToString());
                 Show();
             });
 
             // Buttons
             view.OnNextClicked  += () => eventBus.Fire(new NextLevelEvent());
+            
         }
     }
 }

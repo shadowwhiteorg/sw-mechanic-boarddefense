@@ -8,7 +8,7 @@ namespace _Game.Core.DI
     public class GameBootstrapper : MonoBehaviour
     {
         [Header("Installers (in execution order)")]
-        [SerializeField] private GameInstaller gameInstaller;       // core
+        [SerializeField] private GameInstaller gameInstaller;
         [SerializeField] private RuntimeInstaller runtimeInstaller;
         [SerializeField] private UIInstaller uiInstaller;
 
