@@ -43,53 +43,70 @@ namespace _Game.Core.DI
     /// </summary>
     public sealed class RuntimeInstaller : BaseInstaller
     {
-        [Header("Scene")]
-        [SerializeField] private BoardSurface boardSurface;
+        [Header("Scene")] [SerializeField] private BoardSurface boardSurface;
         [SerializeField] private Camera targetCamera;
 
-        [Header("Parents")]
-        [SerializeField] private Transform unitsParent;        // spawned defenses & enemies
-        [SerializeField] private Transform projectilesParent;  // pooled projectiles
+        [Header("Parents")] [SerializeField] private Transform unitsParent; // spawned defenses & enemies
+        [SerializeField] private Transform projectilesParent; // pooled projectiles
 
-        [Header("Grid Visuals (Prefabs)")]
-        [SerializeField] private GameObject placeableCellPrefab;
+        [Header("Grid Visuals (Prefabs)")] [SerializeField]
+        private GameObject placeableCellPrefab;
+
         [SerializeField] private GameObject hoverHighlightPrefab;
         [SerializeField, Min(0f)] private float surfaceLift = 0.01f;
         [SerializeField] private string visualsRootName = "GridVisuals";
         [SerializeField] private Transform visualsParent;
 
-        [Header("Level")]
-        [SerializeField] private LevelCatalogue levelCatalogue;
+        [Header("Level")] [SerializeField] private LevelCatalogue levelCatalogue;
         [SerializeField] private string levelId = "Level-1";
 
-        [Header("Projectiles (optional prefab)")]
-        [SerializeField] private GameObject projectilePrefab;
+        [Header("Projectiles (optional prefab)")] [SerializeField]
+        private GameObject projectilePrefab;
 
-        [Header("Selection / Placement")]
-        [SerializeField] private Transform selectionModelsParent;
+        [Header("Selection / Placement")] [SerializeField]
+        private Transform selectionModelsParent;
 
-        // Evenly spaced lineup between two border points
         [SerializeField] private Transform selectionSpawnLeft;
         [SerializeField] private Transform selectionSpawnRight;
 
         [SerializeField, Min(0.0f)] private float dragLiftWhileDragging = 0.01f;
 
+        [Header("UI - Selection Slot HUD")] [SerializeField]
+        private GameObject slotHudPrefab;
+
+        [SerializeField] private float slotHudYOffset = 0.25f;
+
+
         public override void Install(IDIContainer container)
         {
-            var events  = GameContext.Events;
+            var events = GameContext.Events;
             var systems = GameContext.Systems;
 
             // ---- Guards ----
-            if (!boardSurface) { Debug.LogError("[RuntimeInstaller] BoardSurface is not assigned."); return; }
+            if (!boardSurface)
+            {
+                Debug.LogError("[RuntimeInstaller] BoardSurface is not assigned.");
+                return;
+            }
+
             if (!targetCamera) targetCamera = Camera.main;
-            if (!targetCamera) { Debug.LogError("[RuntimeInstaller] Target Camera is null (and no MainCamera found)."); return; }
-            if (!levelCatalogue) { Debug.LogError("[RuntimeInstaller] LevelCatalogue is not assigned."); return; }
+            if (!targetCamera)
+            {
+                Debug.LogError("[RuntimeInstaller] Target Camera is null (and no MainCamera found).");
+                return;
+            }
+
+            if (!levelCatalogue)
+            {
+                Debug.LogError("[RuntimeInstaller] LevelCatalogue is not assigned.");
+                return;
+            }
 
             // ==== Core: grid & projection ====
             var rayProvider = new ScreenSpaceRayProvider(targetCamera);
             container.BindSingleton<IRayProvider>(rayProvider);
 
-            var grid      = new BoardGrid(boardSurface.rows, boardSurface.cols, boardSurface.cellSize);
+            var grid = new BoardGrid(boardSurface.rows, boardSurface.cols, boardSurface.cellSize);
             var projector = new GridProjector(grid, boardSurface);
 
             container.BindSingleton(boardSurface);
@@ -105,7 +122,8 @@ namespace _Game.Core.DI
                 Transform visualsRoot = visualsParent;
                 if (!visualsRoot)
                 {
-                    var go = new GameObject(string.IsNullOrWhiteSpace(visualsRootName) ? "GridVisuals" : visualsRootName);
+                    var go = new GameObject(
+                        string.IsNullOrWhiteSpace(visualsRootName) ? "GridVisuals" : visualsRootName);
                     go.transform.SetParent(boardSurface.transform, true);
                     visualsRoot = go.transform;
                 }
@@ -114,7 +132,8 @@ namespace _Game.Core.DI
                 if (placeableCellPrefab)
                 {
                     int approxPlaceable = Mathf.CeilToInt(grid.Size.Rows * grid.Size.Cols * 0.5f);
-                    placeablePool = new GameObjectPool(placeableCellPrefab, initialSize: approxPlaceable, parent: visualsRoot);
+                    placeablePool = new GameObjectPool(placeableCellPrefab, initialSize: approxPlaceable,
+                        parent: visualsRoot);
                 }
 
                 GameObject hoverGO = null;
@@ -133,7 +152,12 @@ namespace _Game.Core.DI
 
             // ==== Level runtime ====
             var levelData = levelCatalogue.GetById(levelId);
-            if (levelData == null) { Debug.LogError($"[RuntimeInstaller] Level '{levelId}' not found in LevelCatalogue."); return; }
+            if (levelData == null)
+            {
+                Debug.LogError($"[RuntimeInstaller] Level '{levelId}' not found in LevelCatalogue.");
+                return;
+            }
+
             var level = new LevelRuntimeConfig(levelData); // must expose DefenseRemaining & EnemyRemaining dictionaries
             container.BindSingleton(level);
 
@@ -143,22 +167,26 @@ namespace _Game.Core.DI
                 unitsParent = new GameObject("Units").transform;
                 unitsParent.SetParent(boardSurface.transform, true);
             }
+
             if (!projectilesParent)
             {
                 projectilesParent = new GameObject("Projectiles").transform;
                 projectilesParent.SetParent(boardSurface.transform, true);
             }
+
             if (!selectionModelsParent)
             {
                 selectionModelsParent = new GameObject("SelectionModels").transform;
                 selectionModelsParent.SetParent(boardSurface.transform, true);
             }
+
             if (!selectionSpawnLeft)
             {
                 selectionSpawnLeft = new GameObject("SelectionSpawnLeft").transform;
                 selectionSpawnLeft.SetParent(boardSurface.transform, true);
                 selectionSpawnLeft.position = boardSurface.transform.position + new Vector3(-2f, 0f, -0.5f);
             }
+
             if (!selectionSpawnRight)
             {
                 selectionSpawnRight = new GameObject("SelectionSpawnRight").transform;
@@ -167,9 +195,9 @@ namespace _Game.Core.DI
             }
 
             // ==== Characters stack ====
-            var pools      = new CharacterPoolRegistry();
-            var repo       = new CharacterRepository();
-            var factory    = new CharacterFactory(pools);
+            var pools = new CharacterPoolRegistry();
+            var repo = new CharacterRepository();
+            var factory = new CharacterFactory(pools);
             var charSystem = new CharacterSystem();
 
             container.BindSingleton(pools);
@@ -196,7 +224,8 @@ namespace _Game.Core.DI
                 var col = projectilePrefab.GetComponent<Collider>();
                 if (col) Object.Destroy(col);
             }
-            var projectilePool   = new GameObjectPool(projectilePrefab, initialSize: 32, parent: projectilesParent);
+
+            var projectilePool = new GameObjectPool(projectilePrefab, initialSize: 32, parent: projectilesParent);
             var projectileSystem = new ProjectileSystem(events, repo, projectilePool);
             systems.Register((IUpdatableSystem)projectileSystem);
 
@@ -228,6 +257,15 @@ namespace _Game.Core.DI
                 level: level,
                 dragLift: dragLiftWhileDragging);
             systems.Register((IUpdatableSystem)selectionSystem);
+
+            if (slotHudPrefab != null)
+            {
+                var hudController = new SelectionHudController(level, events, targetCamera, slotHudPrefab, selectionModelsParent, slotHudYOffset);
+                container.BindSingleton(hudController);
+
+                // This reads CharacterSelectionSpawner.SlotAnchors so HUDs spawn evenly along Left<->Right
+                hudController.BuildFromSpawner(selectionSpawner);
+            }
         }
     }
 }

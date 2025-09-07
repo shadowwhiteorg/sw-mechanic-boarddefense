@@ -73,7 +73,7 @@ namespace _Game.Runtime.Selection
             _events        = events;
             _spawner       = spawner;
             _level         = level;
-            _dragLift      = Mathf.Max(0f, dragLift); // ensure positive lift
+            _dragLift      = Mathf.Max(0f, dragLift);
 
             _events.Subscribe<HoverCellChangedEvent>(e => _hoverCell = e.Cell);
         }
@@ -166,9 +166,9 @@ namespace _Game.Runtime.Selection
 
             var worldCenter = _projector.CellToWorldCenter(cell);
             var archetype   = _selected.Archetype;
-            var refillPos   = _selected.InitialPosition;
+            var slotPos     = _selected.InitialPosition;
 
-            // Spawn the real defense entity (factory typically registers it with systems/repo)
+            // 1) Spawn the real defense entity first
             var entity = _factory.SpawnAtWorld(
                 archetype,
                 worldCenter,
@@ -176,31 +176,30 @@ namespace _Game.Runtime.Selection
                 _placedParent,
                 CharacterRole.Defense);
 
-            // If your factory doesn't auto-register, uncomment:
+            // If your factory doesn't auto-register, keep your existing repo.Add(...) here
             // _repo.Add(entity, cell);
 
-            // Notify others (UI, analytics, SFX) that a defense was placed
-            _events?.Fire(new CharacterPlacedEvent(archetype, entity.EntityId, cell));
-
-            // Remove the consumed selectable
+            // 2) Clean up the consumed selectable (free the slot before we refill)
             _selectables.Remove(_selected);
             UnityEngine.Object.Destroy(_selected.gameObject);
             _selected = null;
 
-            // === Auto-refill logic ===
+            // 3) Decrement stock and (if still > 0 afterwards) refill the same slot
             if (_level != null && _spawner != null)
             {
-                int remaining = _level.GetDefenseRemaining(archetype);
-                if (remaining > 1)
+                int rem = _level.GetDefenseRemaining(archetype);
+                if (rem > 1)
                 {
-                    // Decrement once and spawn a new selectable in the same slot
+                    // Consume one *before* notifying listeners so HUDs see the new value
                     _level.ConsumeDefenseOne(archetype);
 
-                    var refill = _spawner.SpawnAt(archetype, refillPos);
+                    var refill = _spawner.SpawnAt(archetype, slotPos);
                     RegisterSelectable(refill);
                 }
-                // else: no more stock, slot stays empty
             }
+
+            // 4) NOW broadcast the placement — HUDs that refresh on this event will read the decremented value
+            _events?.Fire(new CharacterPlacedEvent(archetype, entity.EntityId, cell));
         }
 
         private void CancelDrag()
