@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 401bc98d4f414526b0f5a1f8867bd7b8, type: 3}
   m_Name: W1_WeaponConfig
   m_EditorClassIdentifier: Assembly-CSharp::_Game.Runtime.Combat.WeaponConfig
-  fireRate: 1
-  rangeBlocks: 4
+  fireRate: 0.33333334
+  rangeBlocks: 3
   projectileMode: 1
   projectileConfig: {fileID: 11400000, guid: fc312d1ef68f9fe468b8e34443092ac6, type: 2}
   muzzleOffset: {x: 0, y: 0, z: 0}
+  attackDirection: 0

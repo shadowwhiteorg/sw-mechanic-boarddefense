@@ -106,7 +106,7 @@ namespace _Game.Runtime.Selection
 
                 // Direction
                 // e.g., enum AttackDirection { Forward, Omni }
-                var ad = a.attackDirection;
+                var ad = a.weapon.attackDirection;
                 dir = ad.ToString();
             }
             catch

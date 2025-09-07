@@ -1,8 +1,10 @@
 ﻿// Assets/_Game/Scripts/_Core/DI/RuntimeInstaller.cs
 using UnityEngine;
 
-using _Game.Core;                        // GameContext
-using _Game.Core.DI;                     // BaseInstaller
+using _Game.Core;
+using _Game.Core.Constants; // GameContext
+using _Game.Core.DI;
+using _Game.Core.Events; // BaseInstaller
 using _Game.Interfaces;                  // IDIContainer, IUpdatableSystem, IEventBus
 
 // Board
@@ -27,20 +29,11 @@ using _Game.Runtime.Systems;             // PointerHoverSystem
 using _Game.Runtime.Visuals;             // GridVisualsService
 
 // Utils
-using _Game.Utils;                       // GameObjectPool
+using _Game.Utils;
+using UnityEngine.SceneManagement; // GameObjectPool
 
 namespace _Game.Core.DI
 {
-    /// <summary>
-    /// Scene-level wiring for:
-    /// - Board/grid + projector + hover
-    /// - Grid visuals (optional, prefab-driven)
-    /// - Characters (factory/repo/system)
-    /// - Enemy spawning from LevelRuntimeConfig counts (top row, random column)
-    /// - Event-driven GameState (Lose on first base hit, Win when all planned enemies resolved)
-    /// - Defense selection/placement with evenly spaced lineup between two border points
-    /// - Projectiles (pooled)
-    /// </summary>
     public sealed class RuntimeInstaller : BaseInstaller
     {
         [Header("Scene")] [SerializeField] private BoardSurface boardSurface;
@@ -151,13 +144,29 @@ namespace _Game.Core.DI
             }
 
             // ==== Level runtime ====
-            var levelData = levelCatalogue.GetById(levelId);
+            // var levelData = levelCatalogue.GetById(levelId);
+            
+            var levelData = levelCatalogue.GetByLevelNr(PlayerPrefs.GetInt(GameConstants.PlayerPrefsLevel,1 ));
             if (levelData == null)
             {
                 Debug.LogError($"[RuntimeInstaller] Level '{levelId}' not found in LevelCatalogue.");
                 return;
             }
-
+            
+            GameContext.Events.Subscribe<GameWonEvent>(e =>
+            {
+                int currentLevelIndex = PlayerPrefs.GetInt(GameConstants.PlayerPrefsLevel, 1);
+                currentLevelIndex++;
+                PlayerPrefs.SetInt(GameConstants.PlayerPrefsLevel,currentLevelIndex);
+            });
+            GameContext.Events.Subscribe<NextLevelEvent>(e =>
+            {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            });
+            GameContext.Events.Subscribe<RestartGameEvent>(e =>
+            {
+                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            });
             var level = new LevelRuntimeConfig(levelData); // must expose DefenseRemaining & EnemyRemaining dictionaries
             container.BindSingleton(level);
 

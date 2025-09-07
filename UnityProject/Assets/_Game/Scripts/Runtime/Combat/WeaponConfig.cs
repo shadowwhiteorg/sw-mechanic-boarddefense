@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using _Game.Enums;
+using UnityEngine;
 
 namespace _Game.Runtime.Combat
 {
@@ -15,5 +16,9 @@ namespace _Game.Runtime.Combat
 
         [Header("View")]
         public Vector3 muzzleOffset = Vector3.zero;
+        
+        [Header("Combat")]
+        // [Min(0)]      public int   attackRangeBlocks = 1;             // grid blocks
+        public AttackDirection     attackDirection    = AttackDirection.Forward;
     }
 }

@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2225047d3ed44b397116b7eebc2d58a, type: 3}
+  m_Name: P3_ProjectileConfig
+  m_EditorClassIdentifier: Assembly-CSharp::_Game.Runtime.Combat.ProjectileConfig
+  projectilePrefab: {fileID: 1868454030377647705, guid: 4c959ed348c6e6d40b3fcefadac7e0fc, type: 3}
+  damage: 10
+  speed: 3
+  pierceCount: 0
+  splashRadius: 0

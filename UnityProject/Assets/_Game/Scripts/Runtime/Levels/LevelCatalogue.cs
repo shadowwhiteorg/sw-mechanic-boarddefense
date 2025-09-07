@@ -14,5 +14,11 @@ namespace _Game.Runtime.Levels
                 if (levels[i] && levels[i].id == id) return levels[i];
             return null;
         }
+
+        public LevelData GetByLevelNr(int levelNr)
+        {
+            var index = (levelNr % levels.Count + levels.Count) % levels.Count;
+            return levels[index];
+        }
     }
 }

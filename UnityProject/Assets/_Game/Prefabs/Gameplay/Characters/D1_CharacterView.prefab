@@ -78,7 +78,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e4c6650cc44c434690efa9fe2aae8546, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Game.Runtime.Characters.View.CharacterView
-  tintables: []
 --- !u!114 &3876279987039181602
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -91,8 +90,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 935b623f9aee4e82adc78b7d623cb067, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Game.Runtime.Selection.SelectableCharacterView
-  boundingRenderers:
-  - {fileID: 205486647031801356}
+  renderers: []
 --- !u!1 &7152844992033784797
 GameObject:
   m_ObjectHideFlags: 0
@@ -133,7 +131,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7152844992033784797}
-  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!23 &205486647031801356
 MeshRenderer:
   m_ObjectHideFlags: 0
