@@ -13,14 +13,12 @@ namespace _Game.Systems.UISystem.Screens
         {
             base.Construct(model, view, eventBus);
 
-            // Show on level complete
             eventBus.Subscribe<GameWonEvent>(e =>
             {
                 model.SetMessage(PlayerPrefs.GetInt(GameConstants.PlayerPrefsLevel,1).ToString());
                 Show();
             });
 
-            // Buttons
             view.OnNextClicked  += () => eventBus.Fire(new NextLevelEvent());
             
         }

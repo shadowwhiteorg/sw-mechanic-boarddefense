@@ -10,7 +10,7 @@ namespace _Game.Runtime.Debugging
     [DisallowMultipleComponent]
     public sealed class BoardDebugHUD : MonoBehaviour
     {
-        [SerializeField] private BoardSurface boardSurface; // for gizmo normal/origin
+        [SerializeField] private BoardSurface boardSurface;
         [SerializeField] private bool drawMarker = true;
 
         private IEventBus _events;

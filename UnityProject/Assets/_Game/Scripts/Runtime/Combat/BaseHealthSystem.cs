@@ -1,5 +1,4 @@
-﻿// Assets/_Game/Scripts/Runtime/Combat/BaseHealthSystem.cs
-using UnityEngine;
+﻿using UnityEngine;
 using _Game.Interfaces;
 using _Game.Core.Events;
 
@@ -23,7 +22,7 @@ namespace _Game.Runtime.Combat
             _bus.Subscribe<EnemyReachedBaseEvent>(OnEnemyReachedBase);
         }
 
-        public void Tick() { /* event-driven; no per-frame logic needed */ }
+        public void Tick() {}
 
         private void OnEnemyReachedBase(EnemyReachedBaseEvent _)
         {

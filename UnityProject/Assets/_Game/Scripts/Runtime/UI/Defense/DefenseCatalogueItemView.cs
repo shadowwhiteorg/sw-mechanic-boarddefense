@@ -1,12 +1,10 @@
-﻿// --- FILE: DefenseCatalogueItemView.cs ---
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using _Game.Runtime.Characters.Config;
 
 namespace _Game.Systems.UI.Defense
 {
-    /// <summary>Single button entry for an archetype.</summary>
     public sealed class DefenseCatalogueItemView : MonoBehaviour
     {
         [Header("UI")]
@@ -18,7 +16,7 @@ namespace _Game.Systems.UI.Defense
         public int Index { get; private set; }
         public CharacterArchetype Archetype { get; private set; }
 
-        public event System.Action<int, CharacterArchetype> OnClicked; // (index, archetype)
+        public event System.Action<int, CharacterArchetype> OnClicked; 
 
         public void Bind(int index, CharacterArchetype a)
         {

@@ -4,16 +4,13 @@ using _Game.Runtime.Characters.Config;
 
 namespace _Game.Runtime.Levels
 {
-    /// Runtime snapshot of LevelData with mutable counters for remaining placeables.
     public sealed class LevelRuntimeConfig
     {
         public readonly LevelData Source;
 
-        // Remaining defense counts by archetype
         private readonly Dictionary<CharacterArchetype, int> _defenseRemaining = new();
         public IReadOnlyDictionary<CharacterArchetype, int> DefenseRemaining => _defenseRemaining;
 
-        // Optional: enemies (for future systems)
         private readonly Dictionary<CharacterArchetype, int> _enemyRemaining = new();
         public IReadOnlyDictionary<CharacterArchetype, int> EnemyRemaining => _enemyRemaining;
         
@@ -38,7 +35,6 @@ namespace _Game.Runtime.Levels
         public int GetDefenseRemaining(CharacterArchetype a)
             => (a && _defenseRemaining.TryGetValue(a, out var rem)) ? rem : 0;
 
-        /// Decrement on successful placement. Returns new remaining value.
         public int ConsumeDefenseOne(CharacterArchetype a)
         {
             if (!a) return 0;

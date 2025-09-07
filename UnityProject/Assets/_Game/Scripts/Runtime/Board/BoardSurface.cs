@@ -24,7 +24,6 @@ namespace _Game.Runtime.Board
 #if UNITY_EDITOR
         private void OnDrawGizmos()
         {
-            // Draw outer rectangle
             var bl = LocalToWorld(localOrigin);
             var br = LocalToWorld(localOrigin + new Vector3(TotalWidth, 0, 0));
             var tl = LocalToWorld(localOrigin + new Vector3(0, 0, TotalHeight));
@@ -34,7 +33,6 @@ namespace _Game.Runtime.Board
             Gizmos.DrawLine(bl, br); Gizmos.DrawLine(br, tr);
             Gizmos.DrawLine(tr, tl); Gizmos.DrawLine(tl, bl);
 
-            // Grid lines + placeable mask (green bottom half, red top half)
             for (int r = 0; r <= rows; r++)
             {
                 float z = r * cellSize;

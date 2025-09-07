@@ -7,13 +7,11 @@ using _Game.Utils;
 
 namespace _Game.Runtime.Combat
 {
-    /// Listens for AttackPerformedEvent (projectileMode) and drives projectiles.
     public sealed class ProjectileSystem : IUpdatableSystem
     {
         private readonly IEventBus _bus;
         private readonly CharacterRepository _repo;
 
-        // Pool fallback if a config has no prefab set:
         private readonly GameObjectPool _fallbackPool;
 
         private readonly List<(Projectile projectile, GameObjectPool pool)> _live = new();
@@ -56,21 +54,19 @@ namespace _Game.Runtime.Combat
 
         private void OnAttack(AttackPerformedEvent e)
         {
-            if (!e.projectileMode) return;
+            if (!e.ProjectileMode) return;
 
-            // prefer per-config pooling when a prefab exists
             GameObjectPool pool = _fallbackPool;
             GameObject go;
 
-            if (e.projectileConfig && e.projectileConfig.projectilePrefab)
+            if (e.ProjectileConfig && e.ProjectileConfig.projectilePrefab)
             {
-                // create a small ephemeral pool for this prefab on first use (optional optimization)
-                pool = new GameObjectPool(e.projectileConfig.projectilePrefab, initialSize: 8, parent: null);
+                pool = new GameObjectPool(e.ProjectileConfig.projectilePrefab, initialSize: 8, parent: null);
             }
 
             go = pool.Get();
             var projectile = go.GetComponent<Projectile>() ?? go.AddComponent<Projectile>();
-            projectile.Init(e.sourceId, e.targetId, e.sourceWorld, e.damage, e.projectileSpeed, e.pierceCount, e.splashRadius);
+            projectile.Init(e.SourceId, e.TargetId, e.SourceWorld, e.Damage, e.ProjectileSpeed, e.PierceCount, e.SplashRadius);
             _live.Add((projectile, pool));
         }
 

@@ -1,6 +1,4 @@
-﻿using _Game.Interfaces;
-
-namespace _Game.Interfaces
+﻿namespace _Game.Interfaces
 {
     public interface ISystemRunner
     {

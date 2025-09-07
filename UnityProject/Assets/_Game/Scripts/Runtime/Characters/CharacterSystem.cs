@@ -1,11 +1,9 @@
-﻿// Assets/_Game/Scripts/Runtime/Characters/CharacterSystem.cs
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using _Game.Interfaces;
 
 namespace _Game.Runtime.Characters
 {
-    /// Ticks character plugins. Robust against views destroyed mid-frame.
     public sealed class CharacterSystem : IUpdatableSystem
     {
         private readonly List<CharacterEntity> _entities = new List<CharacterEntity>(128);
@@ -19,7 +17,6 @@ namespace _Game.Runtime.Characters
 
             _entities.Add(e);
 
-            // Spawn lifecycle
             var plugins = e.Plugins;
             for (int i = 0; i < plugins.Count; i++)
                 plugins[i].OnSpawn(e);
@@ -35,7 +32,6 @@ namespace _Game.Runtime.Characters
                 return;
             }
 
-            // Despawn lifecycle
             var plugins = e.Plugins;
             for (int i = 0; i < plugins.Count; i++)
             {
@@ -57,7 +53,6 @@ namespace _Game.Runtime.Characters
                 var e = _entities[i];
                 if (e == null) continue;
 
-                // If the view or its transform is gone, schedule removal and skip.
                 var view = e.View;
                 if (view == null || view.Root == null)
                 {
@@ -75,7 +70,6 @@ namespace _Game.Runtime.Characters
 
             _isIterating = false;
 
-            // Process any removals requested during iteration
             if (_pendingRemove.Count > 0)
             {
                 for (int i = _entities.Count - 1; i >= 0; i--)
