@@ -32,4 +32,10 @@ namespace _Game.Core.Events
         public CharacterDespawnedEvent(int entityId) { EntityId = entityId; }
     }
     
+    public readonly struct EnemySpawnedEvent : IGameEvent
+    {
+        public readonly int EntityId;
+        public EnemySpawnedEvent(int entityId) => EntityId = entityId;
+    }
+    
 }
