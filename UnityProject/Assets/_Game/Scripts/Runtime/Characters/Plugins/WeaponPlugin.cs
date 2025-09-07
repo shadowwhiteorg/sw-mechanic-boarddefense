@@ -1,0 +1,68 @@
+﻿using _Game.Core.Events;
+using UnityEngine;
+using _Game.Enums;
+using _Game.Interfaces;
+using _Game.Runtime.Board;
+using _Game.Runtime.Combat;
+
+namespace _Game.Runtime.Characters.Plugins
+{
+    public sealed class WeaponPlugin : IAttack
+    {
+        private readonly IEventBus _bus;
+        private readonly BoardGrid _grid;
+
+        private readonly AttackDirection _direction;
+        private readonly int   _rangeBlocks;
+        private readonly WeaponConfig _cfg;
+
+        private CharacterEntity _self;
+        private float _cooldown;
+
+        public WeaponPlugin(IEventBus bus, BoardGrid grid, AttackDirection direction, int rangeBlocks, WeaponConfig cfg)
+        {
+            _bus = bus; _grid = grid; _direction = direction;
+            _rangeBlocks = Mathf.Max(0, rangeBlocks);
+            _cfg = cfg;
+        }
+
+        public void OnSpawn(CharacterEntity e) { _self = e; _cooldown = 0f; }
+        public void OnDespawn() { _self = null; }
+        public void Tick(float dt) { _cooldown -= dt; }
+
+        public bool IsReady => _cooldown <= 0f;
+        public int  RangeBlocks => _rangeBlocks;
+        public AttackDirection Direction => _direction;
+
+        public bool TryFireAt(CharacterEntity target)
+        {
+            if (_self == null || target == null || !IsReady) return false;
+
+            var s = _self.Cell; var t = target.Cell;
+            int md = Mathf.Abs(s.Row - t.Row) + Mathf.Abs(s.Col - t.Col);
+            if (md > _rangeBlocks) return false;
+
+            var proj = _cfg.projectileConfig;
+            int damage       = proj ? proj.damage : 1;
+            float speed      = proj ? proj.speed  : 8f;
+            int pierce       = proj ? proj.pierceCount  : 0;
+            float splash     = proj ? proj.splashRadius : 0f;
+
+            var muzzle = _self.View.Root.TransformPoint(_cfg.muzzleOffset);
+            var targetWorld = target.View.Root.position;
+
+            _bus.Fire(new AttackPerformedEvent(
+                _self.EntityId, target.EntityId, muzzle, targetWorld,
+                damage, _cfg.projectileMode, speed, pierce, splash, proj));
+
+            if (!_cfg.projectileMode)
+            {
+                for (int i = 0; i < target.Plugins.Count; i++)
+                    if (target.Plugins[i] is IHealth hp) { hp.ApplyDamage(damage); break; }
+            }
+
+            _cooldown = 1f / Mathf.Max(0.05f, _cfg.fireRate);
+            return true;
+        }
+    }
+}

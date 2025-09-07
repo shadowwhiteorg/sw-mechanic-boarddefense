@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 401bc98d4f414526b0f5a1f8867bd7b8, type: 3}
+  m_Name: W2_WeaponConfig
+  m_EditorClassIdentifier: Assembly-CSharp::_Game.Runtime.Combat.WeaponConfig
+  fireRate: 0.25
+  rangeBlocks: 2
+  projectileMode: 1
+  projectileConfig: {fileID: 11400000, guid: e0fb2e5ecd0eb4f44a8cdf503ccf0ab2, type: 2}
+  muzzleOffset: {x: 0, y: 0, z: 0}
+  attackDirection: 0
